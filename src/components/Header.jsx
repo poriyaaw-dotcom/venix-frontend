@@ -9,7 +9,6 @@ const Header = () => {
 
   return (
     <header className="bg-background text-primary sticky top-0 z-50 shadow-lg py-4">
-      {/* Changed grid ratio so middle is much wider */}
       <div className="container mx-auto px-6 grid grid-cols-[1fr_2.5fr_1fr] items-center gap-6">
         
         {/* Right Side */}
@@ -30,10 +29,14 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Middle: Search Bar (Now truly wide) */}
+        {/* Middle: Search Bar (Exact 612x39) */}
         <div className="flex justify-center w-full">
-          <div className="relative w-full max-w-5xl">
-            <input type="text" placeholder="جستجو در محصولات..." className="w-full px-6 py-3 rounded-full bg-gray text-background placeholder-background/60 focus:outline-none focus:ring-2 focus:ring-primary transition text-sm" />
+          <div className="relative w-[612px]">
+            <input 
+              type="text" 
+              placeholder="جستجو در محصولات..." 
+              className="w-full h-[39px] px-5 rounded-full bg-gray text-background placeholder-background/60 focus:outline-none focus:ring-2 focus:ring-primary transition text-sm" 
+            />
             <button className="absolute left-4 top-1/2 -translate-y-1/2 text-background/70 hover:text-background transition">
               <FiSearch className="text-lg" />
             </button>

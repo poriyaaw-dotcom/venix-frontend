@@ -10,23 +10,16 @@ const MainCategories = () => {
   ];
 
   return (
-    <section className="py-12 bg-background">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+    <section className="my-[35px] bg-background">
+      <div className="container mx-auto px-6 flex justify-center">
+        <div className="flex flex-wrap justify-center gap-[74px]">
           {categories.map((cat) => (
             <div 
               key={cat.id} 
-              className="bg-[#252525] rounded-3xl p-4 h-64 flex flex-col items-center justify-end cursor-pointer hover:scale-105 transition-transform shadow-lg border border-primary/5 relative overflow-hidden group"
+              className="bg-[#252525] rounded-[30px] flex flex-col items-center justify-end cursor-pointer hover:scale-105 transition-transform shadow-lg border border-primary/5 relative overflow-hidden group w-[180px] h-[180px] p-4"
             >
-              {/* Image on Top */}
-              <img 
-                src="/category-img.png" 
-                alt={cat.name} 
-                className="w-36 h-36 object-contain mb-4 group-hover:scale-110 transition-transform duration-300 z-10"
-              />
-              
-              {/* Text on Bottom */}
-              <h3 className="font-bold text-lg text-primary z-10 mb-2">{cat.name}</h3>
+              <img src="/category-img.png" alt={cat.name} className="w-24 h-24 object-contain mb-2 group-hover:scale-110 transition-transform duration-300 z-10" />
+              <h3 className="font-bold text-sm text-primary z-10">{cat.name}</h3>
             </div>
           ))}
         </div>

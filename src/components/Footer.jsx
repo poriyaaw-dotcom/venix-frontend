@@ -2,34 +2,53 @@ import React from 'react';
 
 const Footer = () => {
   return (
-    <footer className="bg-background py-12 border-t border-gray/20">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-background pt-16 pb-6 border-t border-gray/10">
+      <div className="max-w-[1197px] mx-auto px-6">
+        
+        {/* Dynamic Grid (Will expand automatically if you add more columns) */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div>
-            <h3 className="font-bold mb-4 text-primary text-xl">VENIX</h3>
-            <p className="text-sm leading-relaxed text-gray/70">فروشگاه معتبر برای دوستداران ویپینگ! ارائه بهترین محصولات با ضمانت اصالت کالا.</p>
+            <h3 className="text-2xl font-bold text-primary mb-6">VENIX</h3>
+            <p className="text-gray/60 text-sm leading-relaxed">
+              فروشگاه معتبر برای دوستداران ویپینگ! ارائه بهترین محصولات با ضمانت اصالت کالا و پشتیبانی ۲۴ ساعته.
+            </p>
           </div>
           <div>
-            <h3 className="font-bold mb-4 text-primary">تماس با ما</h3>
-            <ul className="space-y-2 text-sm text-gray/70">
-              <li>۰۲۱-۳۴۵۶۰</li>
-              <li>۰۹۱۲۴۰۰۴۰۰۰</li>
+            <h4 className="text-lg font-bold text-gray mb-6">تماس با ما</h4>
+            <ul className="space-y-4 text-sm text-gray/60">
+              <li>۰۲-۳۴۵۶۰</li>
+              <li>۰۲۱-۳۴۵۶</li>
+              <li>۰۱۲۴۰۰۰۰۰</li>
+              <li>۰۹۱۲۰۰۵۰۵</li>
             </ul>
           </div>
           <div>
-            <h3 className="font-bold mb-4 text-primary">لینک های مهم</h3>
-            <ul className="space-y-2 text-sm text-gray/70">
+            <h4 className="text-lg font-bold text-gray mb-6">لینک های مهم</h4>
+            <ul className="space-y-4 text-sm text-gray/60">
               <li><a href="#" className="hover:text-primary transition">قیمت پاد</a></li>
+              <li><a href="#" className="hover:text-primary transition">قیمت ویپ</a></li>
               <li><a href="#" className="hover:text-primary transition">خرید جویس</a></li>
+              <li><a href="#" className="hover:text-primary transition">درباره ما</a></li>
             </ul>
           </div>
           <div>
-            <h3 className="font-bold mb-4 text-primary">دسترسی سریع</h3>
-            <ul className="space-y-2 text-sm text-gray/70">
+            <h4 className="text-lg font-bold text-gray mb-6">دسترسی سریع</h4>
+            <ul className="space-y-4 text-sm text-gray/60">
               <li><a href="#" className="hover:text-primary transition">قوانین و مقررات</a></li>
               <li><a href="#" className="hover:text-primary transition">پیگیری سفارش</a></li>
+              <li><a href="#" className="hover:text-primary transition">سوالات متداول</a></li>
+              <li><a href="#" className="hover:text-primary transition">بلاگ تخصصی</a></li>
             </ul>
           </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray/10 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-gray/40 gap-4">
+          <p>تمامی حقوق محفوظ و متعلق به VENIX می‌باشد.</p>
+          <p>
+            توسعه و طراحی توسط تیم 
+            <a href="#" className="text-primary hover:underline font-bold mx-1">آریس</a>
+          </p>
         </div>
       </div>
     </footer>
