@@ -19,3 +19,11 @@ body { @apply bg-background text-gray font-sans; }
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
 }
+/* Add at the bottom of src/index.css */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}

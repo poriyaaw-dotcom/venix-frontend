@@ -1,14 +1,17 @@
+// src/components/Footer.jsx
 import React from 'react';
+import venixLogo from '../assets/venix-logo.png';
 
 const Footer = () => {
   return (
     <footer className="bg-background pt-16 pb-6 border-t border-gray/10">
       <div className="max-w-[1197px] mx-auto px-6">
         
-        {/* Dynamic Grid (Will expand automatically if you add more columns) */}
+        {/* Dynamic Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div>
-            <h3 className="text-2xl font-bold text-primary mb-6">VENIX</h3>
+            {/* Replaced text with Logo Image */}
+            <img src={venixLogo} alt="VENIX" className="h-12 w-auto object-contain mb-6" />
             <p className="text-gray/60 text-sm leading-relaxed">
               فروشگاه معتبر برای دوستداران ویپینگ! ارائه بهترین محصولات با ضمانت اصالت کالا و پشتیبانی ۲۴ ساعته.
             </p>
@@ -16,7 +19,7 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-bold text-gray mb-6">تماس با ما</h4>
             <ul className="space-y-4 text-sm text-gray/60">
-              <li>۰۲-۳۴۵۶۰</li>
+              <li>۰۲-۳۴۶۰</li>
               <li>۰۲۱-۳۴۵۶</li>
               <li>۰۱۲۴۰۰۰۰۰</li>
               <li>۰۹۱۲۰۰۵۰۵</li>
