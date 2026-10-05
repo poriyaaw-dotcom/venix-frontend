@@ -131,7 +131,7 @@ const Admin = () => {
               values: a.values.filter(v => v)
             })),
             variants: productForm.variants.map(v => ({
-              sku: v.sku || `VAR-${Date.now()}`,
+              sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
               price: parseFloat(v.price) || 0,
               stock_quantity: parseInt(v.stock_quantity) || 0,
               selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
@@ -160,7 +160,7 @@ const Admin = () => {
           await fetch(`${API_BASE_URL}/admin/products/${productId}/variants`, {
             method: 'POST', headers,
             body: JSON.stringify({ 
-              sku: variant.sku || `VAR-${Date.now()}`,
+              sku: variant.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
               purchase_cost: parseFloat(variant.price) || 0,
               price_normal: parseFloat(variant.price) || 0,
               price_visitor: parseFloat(variant.price) || 0,
@@ -523,7 +523,16 @@ const Admin = () => {
                 <h1 className="text-2xl font-bold text-white">مدیریت محصولات {showDeactivatedOnly && <span className="text-red-400 text-lg">(فقط غیرفعال‌ها)</span>}</h1>
                 <div className="flex gap-2">
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
-                  <button onClick={() => { setEditingProduct(null); setIsAddProductOpen(true); setProductTab('base'); }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+                  <button onClick={() => { 
+    setEditingProduct(null); 
+    setProductForm({ 
+      title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', 
+      attributes: [{ name: '', values: [''] }], 
+      variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] 
+    }); 
+    setIsAddProductOpen(true); 
+    setProductTab('base'); 
+  }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
                     <FiPlus /> افزودن محصول جدید
                   </button>
                 </div>
