@@ -20,6 +20,7 @@ const Admin = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [newBrandName, setNewBrandName] = useState('');
   
   const [dashboardStats, setDashboardStats] = useState({ 
@@ -35,7 +36,7 @@ const Admin = () => {
 
   const [productTab, setProductTab] = useState('base');
   const [productForm, setProductForm] = useState({
-    title: '', title_en: '', description: '', image_url: '', brand_id: '',
+    title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '',
     attributes: [{ name: '', values: [''] }],
     variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }]
   });
@@ -71,6 +72,10 @@ const Admin = () => {
         } else if (activeTab === 'products') {
           const res = await fetch(`${API_BASE_URL}/admin/products`, { headers });
           if (res.ok) setProductsList(await res.json());
+          const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers });
+          if (resCats.ok) setCategories(await resCats.json());
+          const resBrands = await fetch(`${API_BASE_URL}/admin/brands`, { headers });
+          if (resBrands.ok) setBrands(await resBrands.json());
         } else if (activeTab === 'customers') {
           const res = await fetch(`${API_BASE_URL}/admin/partner-requests`, { headers });
           if (res.ok) setPartnerRequests(await res.json());
@@ -83,6 +88,9 @@ const Admin = () => {
         } else if (activeTab === 'brands') {
           const res = await fetch(`${API_BASE_URL}/admin/brands`, { headers });
           if (res.ok) setBrands(await res.json());
+        } else if (activeTab === 'categories') {
+          const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers });
+          if (resCats.ok) setCategories(await resCats.json());
         }
       } catch (error) { console.error(error); }
     };
@@ -95,33 +103,45 @@ const Admin = () => {
     try {
       let productId = editingProduct ? editingProduct.id : null;
 
+      // 1. Create or Update Basic Product Info
       if (!editingProduct) {
         const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { 
           method: 'POST', headers, 
           body: JSON.stringify({ 
             title: productForm.title, title_en: productForm.title_en, 
             description: productForm.description, image_url: productForm.image_url,
-            brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null
+            brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
+            category_id: productForm.category_id ? parseInt(productForm.category_id) : null
           }) 
         });
         if (!res1.ok) throw new Error('خطا در ایجاد محصول');
         const productData = await res1.json();
         productId = productData.id;
       } else {
-        // Basic update for existing product (you can expand this later)
+        // UPDATE existing product with ALL data (basic + attributes + variants)
         await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
           method: 'PUT', headers,
           body: JSON.stringify({
             title: productForm.title, title_en: productForm.title_en,
             description: productForm.description, image_url: productForm.image_url,
-            brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null
+            brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
+            category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
+            attributes: productForm.attributes.map(a => ({
+              name: a.name,
+              values: a.values.filter(v => v)
+            })),
+            variants: productForm.variants.map(v => ({
+              sku: v.sku || `VAR-${Date.now()}`,
+              price: parseFloat(v.price) || 0,
+              stock_quantity: parseInt(v.stock_quantity) || 0,
+              selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
+            }))
           })
         });
       }
 
-      // Handle attributes and variants only for new products for simplicity, 
-      // or you can expand this to update existing ones.
-      if (!editingProduct) {
+      // 2. Handle attributes and variants for NEW products only (PUT handles updates)
+      if (!editingProduct && productId) {
         for (const attr of productForm.attributes) {
           if (!attr.name) continue;
           const resAttr = await fetch(`${API_BASE_URL}/admin/products/${productId}/attributes`, { method: 'POST', headers, body: JSON.stringify({ name: attr.name }) });
@@ -135,13 +155,17 @@ const Admin = () => {
         }
 
         for (const variant of productForm.variants) {
-          if (!variant.price || !variant.stock_quantity) continue;
-          const validSelectedIds = variant.selectedValueIds.filter(id => typeof id === 'number');
+          if (!variant.price && !variant.stock_quantity) continue;
+          const validSelectedIds = variant.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string');
           await fetch(`${API_BASE_URL}/admin/products/${productId}/variants`, {
             method: 'POST', headers,
             body: JSON.stringify({ 
-              sku: `VAR-${Date.now()}`,
+              sku: variant.sku || `VAR-${Date.now()}`,
               purchase_cost: parseFloat(variant.price) || 0,
+              price_normal: parseFloat(variant.price) || 0,
+              price_visitor: parseFloat(variant.price) || 0,
+              price_shop_owner: parseFloat(variant.price) || 0,
+              price_wholesale: parseFloat(variant.price) || 0,
               stock_quantity: parseInt(variant.stock_quantity) || 0, 
               attribute_value_ids: validSelectedIds
             })
@@ -152,7 +176,7 @@ const Admin = () => {
       alert(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
       setIsAddProductOpen(false);
       setEditingProduct(null);
-      setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] });
+      setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] });
       const resList = await fetch(`${API_BASE_URL}/admin/products`, { headers });
       if (resList.ok) setProductsList(await resList.json());
     } catch (error) {
@@ -179,21 +203,79 @@ const Admin = () => {
     }
   };
 
-  const handleEditProduct = (product) => {
+  
+
+
+  const [newCatName, setNewCatName] = useState('');
+  const handleEditProduct = async (product) => {
     setEditingProduct(product);
-    setProductForm({
-      title: product.title,
-      title_en: product.title_en || '',
-      description: product.description || '',
-      image_url: product.image_url || '',
-      brand_id: product.brand_id || '',
-      attributes: [{ name: '', values: [''] }],
-      variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }]
-    });
     setIsAddProductOpen(true);
     setProductTab('base');
+    
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/products/${product.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        console.log("✅ Loaded product data for edit:", data);
+        
+        setProductForm({
+          title: data.title || '',
+          title_en: data.title_en || '',
+          description: data.description || '',
+          image_url: data.image_url || '',
+          brand_id: data.brand_id ? String(data.brand_id) : '',
+          category_id: data.category_id ? String(data.category_id) : '',
+          attributes: data.attributes && data.attributes.length > 0 
+            ? data.attributes 
+            : [{ name: '', values: [''] }],
+          variants: data.variants && data.variants.length > 0 
+            ? data.variants.map(v => ({
+                id: v.id,
+                sku: v.sku || '',
+                price: String(v.price || ''),
+                stock_quantity: String(v.stock_quantity || ''),
+                selectedValueIds: v.selectedValueIds || []
+              }))
+            : [{ price: '', stock_quantity: '', selectedValueIds: [] }]
+        });
+      } else {
+        alert('خطا در دریافت اطلاعات محصول');
+      }
+    } catch (error) {
+      console.error("Failed to load product details", error);
+      alert('خطای شبکه در دریافت اطلاعات محصول');
+    }
   };
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/categories`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCatName })
+      });
+      if (res.ok) {
+        setNewCatName('');
+        const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (resCats.ok) setCategories(await resCats.json());
+      }
+    } catch (error) { alert('خطا در افزودن دسته‌بندی'); }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    if (!window.confirm('آیا از حذف این دسته‌بندی اطمینان دارید؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/categories/${catId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) setCategories(categories.filter(c => c.id !== catId));
+      else alert('خطا در حذف دسته‌بندی');
+    } catch (error) { alert('خطای شبکه'); }
+  };
   const handleAddBrand = async (e) => {
     e.preventDefault();
     if (!newBrandName.trim()) return;
@@ -211,6 +293,24 @@ const Admin = () => {
       }
     } catch (error) {
       alert('خطا در افزودن برند');
+    }
+  };
+
+  const handleDeleteBrand = async (brandId) => {
+    if (!window.confirm('آیا از حذف این برند اطمینان دارید؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/brands/${brandId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setBrands(brands.filter(b => b.id !== brandId));
+      } else {
+        alert('خطا در حذف برند');
+      }
+    } catch (error) {
+      alert('خطای شبکه');
     }
   };
 
@@ -289,7 +389,8 @@ const Admin = () => {
     { id: 'dashboard', label: 'داشبورد', icon: FiHome },
     { id: 'orders', label: 'مدیریت سفارشات', icon: FiShoppingBag },
     { id: 'products', label: 'مدیریت محصولات', icon: FiPackage },
-    { id: 'brands', label: 'مدیریت برندها', icon: FiTag }, // ✅ NEW
+    { id: 'brands', label: 'مدیریت برندها', icon: FiTag },
+    { id: 'categories', label: 'مدیریت دسته‌بندی‌ها', icon: FiTag }, // ✅ NEW
     { id: 'customers', label: 'درخواست‌های همکاری', icon: FiUsers },
     { id: 'logs', label: 'گزارشات سیستم', icon: FiFileText },
   ];
@@ -357,7 +458,35 @@ const Admin = () => {
               </div>
             </div>
           )}
-
+          {activeTab === 'categories' && (
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-6">مدیریت دسته‌بندی‌ها</h1>
+              <form onSubmit={handleAddCategory} className="flex gap-4 mb-8">
+                <input 
+                  type="text" 
+                  placeholder="نام دسته‌بندی جدید" 
+                  value={newCatName} 
+                  onChange={(e) => setNewCatName(e.target.value)} 
+                  className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" 
+                />
+                <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن دسته‌بندی</button>
+              </form>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {categories.map(cat => (
+                  <div key={cat.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
+                    <h3 className="font-bold text-white">{cat.name}</h3>
+                    <button 
+                      onClick={() => handleDeleteCategory(cat.id)} 
+                      className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" 
+                      title="حذف"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {activeTab === 'brands' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت برندها</h1>
@@ -373,8 +502,15 @@ const Admin = () => {
               </form>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {brands.map(brand => (
-                  <div key={brand.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 text-center">
+                  <div key={brand.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
                     <h3 className="font-bold text-white">{brand.name}</h3>
+                    <button 
+                      onClick={() => handleDeleteBrand(brand.id)}
+                      className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100"
+                      title="حذف برند"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -504,8 +640,10 @@ const Admin = () => {
 
                 <div className="flex border-b border-white/10 mb-6">
                   <button onClick={() => setProductTab('base')} className={`py-3 px-6 font-bold transition ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button>
-                  {!editingProduct && <button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. ویژگی‌ها و مشخصات</button>}
-                  {!editingProduct && <button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button>}
+                  <button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. ویژگی‌ها و مشخصات</button>
+
+                  <button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button>
+
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2 mb-6">
@@ -514,6 +652,16 @@ const Admin = () => {
                       <input type="text" placeholder="نام محصول" value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
                       <input type="text" placeholder="نام محصول (انگلیسی)" value={productForm.title_en} onChange={e => setProductForm({...productForm, title_en: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
                       
+                      {/* ✅ CATEGORY DROPDOWN */}
+                      <select 
+                        value={productForm.category_id} 
+                        onChange={e => setProductForm({...productForm, category_id: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4"
+                      >
+                        <option value="">انتخاب دسته‌بندی (اختیاری)</option>
+                        {categories.map(c => <option key={c.id} value={c.id} className="text-black">{c.name}</option>)}
+                      </select>
+
                       {/* ✅ BRAND DROPDOWN */}
                       <select 
                         value={productForm.brand_id} 
@@ -532,7 +680,7 @@ const Admin = () => {
                     </div>
                   )}
 
-                  {!editingProduct && productTab === 'attrs' && (
+                  {productTab === 'attrs' && (
                     <div className="space-y-4">
                       {productForm.attributes.map((attr, attrIndex) => (
                         <div key={attrIndex} className="bg-white/5 rounded-xl p-4 border border-white/5 space-y-3">
@@ -561,7 +709,7 @@ const Admin = () => {
                     </div>
                   )}
 
-                  {!editingProduct && productTab === 'variants' && (
+                  {productTab === 'variants' && (
                     <div className="space-y-4">
                       {productForm.variants.map((variant, vIdx) => (
                         <div key={vIdx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">

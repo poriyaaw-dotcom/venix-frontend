@@ -1,5 +1,5 @@
 // src/components/Header.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../Context/CartContext';
 import { FiSearch, FiPhone, FiUser, FiShoppingCart, FiMenu } from 'react-icons/fi';
@@ -9,8 +9,25 @@ const Header = () => {
   const navigate = useNavigate();
   const [showCategories, setShowCategories] = useState(false);
   const { cartCount } = useCart();
+  
+  // Dynamic categories state fetched from backend
+  const [categories, setCategories] = useState([]);
 
-  const categories = ['دستگاه', 'لیکوئید ها', 'کویل', 'کارتریج', 'پاد یکبار مصرف'];
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/v1/products/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCategories(data);
+        } else {
+          setCategories([]);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load categories:", err);
+        setCategories([]);
+      });
+  }, []);
 
   return (
     <header className="bg-background text-primary sticky top-0 z-50 shadow-lg py-4">
@@ -37,10 +54,15 @@ const Header = () => {
             {/* Dropdown Menu */}
             {showCategories && (
               <div className="absolute top-full right-0 mt-3 w-48 bg-background rounded-xl shadow-2xl py-2 border border-primary/20">
-                {categories.map((cat, idx) => (
-                  <button key={idx} className="block w-full text-right px-4 py-2 hover:bg-primary/10 transition text-gray-400 hover:text-primary text-sm">
-                    {cat}
-                  </button>
+                {categories.map((cat) => (
+                  <Link 
+                    key={cat.id} 
+                    to={`/shop?category=${cat.slug}`}
+                    className="block w-full text-right px-4 py-2 hover:bg-primary/10 transition text-gray-400 hover:text-primary text-sm"
+                    onClick={() => setShowCategories(false)}
+                  >
+                    {cat.name}
+                  </Link>
                 ))}
               </div>
             )}
