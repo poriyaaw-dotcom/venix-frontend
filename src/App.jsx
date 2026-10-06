@@ -1,6 +1,7 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './Context/CartContext'; 
+import { Toaster } from 'react-hot-toast'; // ✅ Added Toaster import
 
 // Components
 import Header from './components/Header';
@@ -21,12 +22,26 @@ import Login from './pages/Login';
 import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
-import Admin from './pages/Admin'; // <--- IMPORTED HERE
+import Admin from './pages/Admin'; 
 
 function App() {
   return (
     <CartProvider>
       <Router>
+        {/* ✅ Added Toaster here, safely inside the Router */}
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: '#1a1a1a',
+              color: '#fff',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              fontSize: '14px'
+            }
+          }}
+        />
+        
         <Routes>
           <Route path="/" element={
             <div className="min-h-screen font-sans">
@@ -48,7 +63,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<Admin />} /> {/* <--- ROUTE ADDED HERE */}
+          <Route path="/admin" element={<Admin />} /> 
         </Routes>
       </Router>
     </CartProvider>

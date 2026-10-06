@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 // src/pages/Admin.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -196,7 +197,7 @@ const Admin = () => {
         }
       }
 
-      alert(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
+      toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
       setIsAddProductOpen(false);
       setEditingProduct(null);
       setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] });
@@ -204,7 +205,7 @@ const Admin = () => {
       if (resList.ok) setProductsList(await resList.json());
     } catch (error) {
       console.error(error);
-      alert('خطای شبکه: ' + error.message);
+      toast.error('خطای شبکه: ' + error.message);
     }
   };
 
@@ -219,10 +220,10 @@ const Admin = () => {
       if (res.ok) {
         setProductsList(productsList.filter(p => p.id !== productId));
       } else {
-        alert('خطا در حذف محصول');
+        toast.error('خطا در حذف محصول');
       }
     } catch (error) {
-      alert('خطای شبکه');
+      toast.error('خطای شبکه');
     }
   };
 
@@ -260,11 +261,11 @@ const Admin = () => {
             : [{ price: '', stock_quantity: '', selectedValueIds: [] }]
         });
       } else {
-        alert('خطا در دریافت اطلاعات محصول');
+        toast.error('خطا در دریافت اطلاعات محصول');
       }
     } catch (error) {
       console.error("Failed to load product details", error);
-      alert('خطای شبکه در دریافت اطلاعات محصول');
+      toast.error('خطای شبکه در دریافت اطلاعات محصول');
     }
   };
 
@@ -282,7 +283,7 @@ const Admin = () => {
         const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (resCats.ok) setCategories(await resCats.json());
       }
-    } catch (error) { alert('خطا در افزودن دسته‌بندی'); }
+    } catch (error) { toast.error('خطا در افزودن دسته‌بندی'); }
   };
 
   const handleDeleteCategory = async (catId) => {
@@ -291,8 +292,8 @@ const Admin = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/categories/${catId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) setCategories(categories.filter(c => c.id !== catId));
-      else alert('خطا در حذف دسته‌بندی');
-    } catch (error) { alert('خطای شبکه'); }
+      else toast.error('خطا در حذف دسته‌بندی');
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleAddBrand = async (e) => {
@@ -311,7 +312,7 @@ const Admin = () => {
         if (resBrands.ok) setBrands(await resBrands.json());
       }
     } catch (error) {
-      alert('خطا در افزودن برند');
+      toast.error('خطا در افزودن برند');
     }
   };
 
@@ -326,10 +327,10 @@ const Admin = () => {
       if (res.ok) {
         setBrands(brands.filter(b => b.id !== brandId));
       } else {
-        alert('خطا در حذف برند');
+        toast.error('خطا در حذف برند');
       }
     } catch (error) {
-      alert('خطای شبکه');
+      toast.error('خطای شبکه');
     }
   };
 
@@ -344,8 +345,8 @@ const Admin = () => {
         setApprovingId(null);
         const res2 = await fetch(`${API_BASE_URL}/admin/partner-requests`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setPartnerRequests(await res2.json());
-      } else { alert('خطا در تایید'); }
-    } catch (error) { alert('خطای شبکه'); }
+      } else { toast.error('خطا در تایید'); }
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleReject = async (id) => {
@@ -356,7 +357,7 @@ const Admin = () => {
         const res2 = await fetch(`${API_BASE_URL}/admin/partner-requests`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setPartnerRequests(await res2.json());
       }
-    } catch (error) { alert('خطای شبکه'); }
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -367,15 +368,15 @@ const Admin = () => {
         body: JSON.stringify({ status: newStatus, notes: '' })
       });
       if (res.ok) {
-        alert('وضعیت سفارش بروزرسانی شد');
+        toast.success('وضعیت سفارش با موفقیت بروزرسانی شد');
         const res2 = await fetch(`${API_BASE_URL}/admin/orders`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setOrders(await res2.json());
         setSelectedOrder(null);
       } else { 
         const errData = await res.json();
-        alert(errData.detail || 'خطا در بروزرسانی'); 
+        toast.error(errData.detail || 'خطا در بروزرسانی'); 
       }
-    } catch (error) { alert('خطای شبکه'); }
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleToggleProductStatus = async (productId, currentActive) => {
@@ -389,7 +390,7 @@ const Admin = () => {
         const res2 = await fetch(`${API_BASE_URL}/admin/products`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setProductsList(await res2.json());
       }
-    } catch (error) { alert('خطای شبکه'); }
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
   if (isAuthorized === false) {
