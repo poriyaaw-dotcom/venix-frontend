@@ -84,7 +84,16 @@ const Shop = () => {
                 نمایش <span className="text-primary font-bold">{currentProducts.length}</span> از <span className="text-primary font-bold">{sortedProducts.length}</span> محصول
               </p>
               {isLoading ? (
-                <div className="flex items-center justify-center py-20"><span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></span></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="w-full bg-white/[0.025] border border-white/10 rounded-2xl p-4 animate-pulse">
+                      <div className="w-full aspect-square bg-gray-700/50 rounded-xl mb-4"></div>
+                      <div className="h-4 bg-gray-700/50 rounded w-3/4 mb-3"></div>
+                      <div className="h-4 bg-gray-700/50 rounded w-1/2 mb-4"></div>
+                      <div className="h-10 bg-gray-700/50 rounded w-full"></div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center min-h-[400px]">
                   {currentProducts.length > 0 ? currentProducts.map((product) => <ProductCard key={product.id} product={product} />) : (
