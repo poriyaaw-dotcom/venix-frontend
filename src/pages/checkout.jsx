@@ -19,18 +19,48 @@ const Checkout = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (cartItems.length === 0) { setError('سبد خرید شما خالی است!'); return; }
+    
+    if (cartItems.length === 0) { 
+      setError('سبد خرید شما خالی است!'); 
+      return; 
+    }
+    
+    if (!formData.province || !formData.city || !formData.full_address || !formData.postal_code) {
+      setError('لطفاً تمام فیلدهای آدرس را به درستی پر کنید.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const paymentData = await createOrderAndPay(formData);
+      // ✅ Construct the authoritative payload expected by the backend
+      const checkoutPayload = {
+        items: cartItems.map(item => ({
+          variant_id: item.variant_id,
+          quantity: item.quantity
+        })),
+        shipping_address: {
+          province: formData.province,
+          city: formData.city,
+          full_address: formData.full_address,
+          postal_code: formData.postal_code
+        }
+      };
+
+      const paymentData = await createOrderAndPay(checkoutPayload);
+      
+      // Clear cart only after successful order creation
       clearCart();
+      
       if (paymentData.payment_url) {
         window.location.href = paymentData.payment_url;
       } else {
-        throw new Error('آدرس پرداخت دریافت نشد');
+        // Fallback if payment gateway URL is not yet returned by backend
+        alert(`سفارش با موفقیت ثبت شد! \nشماره سفارش: ${paymentData.order_id}\nمبلغ: ${paymentData.total_price} تومان`);
+        navigate('/'); 
       }
     } catch (err) {
+      console.error("Checkout error:", err);
       setError(err.message || 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.');
       setLoading(false);
     }
@@ -118,4 +148,5 @@ const Checkout = () => {
     </div>
   );
 };
+
 export default Checkout;

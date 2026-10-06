@@ -47,7 +47,7 @@ const ProductDetail = () => {
   const price = hasDiscount ? product.discountPrice : product.price;
   
   // ✅ Safe brand extraction
-  const brandName = product.brand ? (typeof product.brand === 'object' ? product.brand.name : product.brand) : null;
+  const brandName = product.brand_name || null;
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
@@ -101,17 +101,41 @@ const ProductDetail = () => {
             {product.attributes && Array.isArray(product.attributes) && product.attributes.length > 0 && (
               <div className="mt-8">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <FiSettings className="text-primary" /> مشخصات فنی
+                  <FiSettings className="text-primary" /> ویژگی‌ها و مشخصات
                 </h3>
                 <div className="bg-white/[0.035] border border-white/10 rounded-2xl overflow-hidden">
                   {product.attributes.map((attr, idx) => (
                     <div key={attr.id || idx} className={`flex justify-between p-4 ${idx !== product.attributes.length - 1 ? 'border-b border-white/5' : ''}`}>
                       <span className="text-gray-400 text-sm">{attr.name}</span>
                       <span className="text-white text-sm font-medium text-left" dir="ltr">
-                        {attr.values && Array.isArray(attr.values) 
+                        {attr.values && Array.isArray(attr.values) && attr.values.length > 0
                           ? attr.values.map(v => v.value).join('، ') 
-                          : (attr.value || 'نامشخص')}
+                          : 'نامشخص'}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ Variants Display */}
+            {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <FiShoppingCart className="text-primary" /> واریانت‌های موجود
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {product.variants.map((variant, idx) => (
+                    <div key={variant.id} className="bg-white/[0.035] border border-white/10 rounded-xl p-4 flex justify-between items-center">
+                      <div>
+                        <div className="text-white font-bold text-sm">
+                          {variant.attributes && variant.attributes.length > 0 
+                            ? variant.attributes.map(a => `${a.name}: ${a.value}`).join(' | ') 
+                            : `واریانت #${idx + 1}`}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">موجودی: {variant.stock_quantity !== null ? variant.stock_quantity : 'نامحدود'}</div>
+                      </div>
+                      <div className="text-primary font-black text-lg">{formatPrice(variant.final_price)} <span className="text-xs font-normal text-gray-400">تومان</span></div>
                     </div>
                   ))}
                 </div>
@@ -137,7 +161,14 @@ const ProductDetail = () => {
                   <button onClick={() => setQuantity((q) => q + 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5"><FiPlus /></button>
                 </div>
               </div>
-              <button onClick={() => addToCart({ ...product, quantity })} className="w-full mt-5 bg-button hover:bg-button/90 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2">
+              
+              {/* ✅ FIXED: Add to Cart Button using variant_id */}
+              <button onClick={() => {
+                const targetVariantId = product.variants && product.variants.length > 0 
+                  ? product.variants[0].id 
+                  : product.id;
+                addToCart(targetVariantId, quantity, { title: product.title, price: product.price });
+              }} className="w-full mt-5 bg-button hover:bg-button/90 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2">
                 <FiShoppingCart className="w-5 h-5" /> افزودن به سبد خرید
               </button>
             </div>

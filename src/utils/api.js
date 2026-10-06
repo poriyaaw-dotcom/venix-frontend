@@ -80,36 +80,33 @@ export const fetchProductById = async (id) => {
 };
 
 // 3. Create Order & Initiate Payment (For Checkout Page)
-export const createOrderAndPay = async (formData) => {
+export const createOrderAndPay = async (checkoutPayload) => {
   try {
-    const checkoutRes = await fetch(`${API_BASE_URL}/checkout/`, {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('لطفاً ابتدا وارد حساب کاربری خود شوید.');
+
+    const checkoutRes = await fetch(`${API_BASE_URL}/checkout/create-order`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(checkoutPayload)
     });
     
     if (!checkoutRes.ok) {
       const err = await checkoutRes.json();
-      throw new Error(err.detail || 'Failed to create order');
+      throw new Error(err.detail || 'خطا در ثبت سفارش');
     }
+    
     const orderData = await checkoutRes.json();
-
-    const idempotencyKey = `checkout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const paymentRes = await fetch(`${API_BASE_URL}/payments/initiate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        order_id: orderData.id,
-        idempotency_key: idempotencyKey
-      })
-    });
     
-    if (!paymentRes.ok) {
-      const err = await paymentRes.json();
-      throw new Error(err.detail || 'Failed to initiate payment');
-    }
-    
-    return await paymentRes.json();
+    return { 
+      message: orderData.message,
+      order_id: orderData.order_id,
+      total_price: orderData.total_price
+      // payment_url will be added here once the payment gateway is integrated
+    };
     
   } catch (error) {
     console.error("Checkout error:", error);

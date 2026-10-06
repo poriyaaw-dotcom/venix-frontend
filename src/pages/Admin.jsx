@@ -131,6 +131,7 @@ const Admin = () => {
               values: a.values.filter(v => v)
             })),
             variants: productForm.variants.map(v => ({
+              id: v.id,
               sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
               price: parseFloat(v.price) || 0,
               stock_quantity: parseInt(v.stock_quantity) || 0,

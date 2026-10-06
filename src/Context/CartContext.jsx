@@ -12,7 +12,6 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  // Load cart from localStorage on initial render
   const [cartItems, setCartItems] = useState(() => {
     try {
       const savedCart = localStorage.getItem('venix_cart');
@@ -22,36 +21,43 @@ export const CartProvider = ({ children }) => {
     }
   });
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('venix_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (productWithQuantity) => {
+  // ✅ UPDATED: Now explicitly expects variant_id for accurate backend syncing
+  const addToCart = (variantId, quantity, productInfo) => {
     setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === productWithQuantity.id);
+      const existing = prev.find((item) => item.variant_id === variantId);
       if (existing) {
         return prev.map((item) =>
-          item.id === productWithQuantity.id
-            ? { ...item, quantity: item.quantity + productWithQuantity.quantity }
+          item.variant_id === variantId
+            ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       }
-      return [...prev, productWithQuantity];
+      return [...prev, { 
+        variant_id: variantId, 
+        quantity, 
+        // Keep minimal product info for UI display only. 
+        // Backend will recalculate authoritative price at checkout.
+        title: productInfo?.title || 'محصول', 
+        price: productInfo?.price || 0 
+      }];
     });
   };
 
-  const removeFromCart = (id) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (variantId) => {
+    setCartItems((prev) => prev.filter((item) => item.variant_id !== variantId));
   };
 
-  const updateQuantity = (id, quantity) => {
+  const updateQuantity = (variantId, quantity) => {
     if (quantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(variantId);
       return;
     }
     setCartItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      prev.map((item) => (item.variant_id === variantId ? { ...item, quantity } : item))
     );
   };
 
@@ -60,7 +66,8 @@ export const CartProvider = ({ children }) => {
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const cartTotal = cartItems.reduce((sum, item) => sum + ((item.discountPrice || item.price) * item.quantity), 0);
+  // Note: This total is for UI display only. The backend calculates the authoritative total at checkout.
+  const cartTotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * item.quantity), 0);
 
   return (
     <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal }}>

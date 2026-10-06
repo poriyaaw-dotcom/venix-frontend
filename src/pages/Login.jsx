@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiLock, FiArrowLeft, FiBriefcase } from 'react-icons/fi';
 import Header from '../components/Header';
@@ -22,6 +22,47 @@ const Login = () => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // ✅ NEW: Track if OTP has been sent at least once
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
+  // Request OTP function with error handling
+  const requestOTP = async () => {
+    setErrorMessage('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: phone })
+      });
+      
+      if (res.status === 429) {
+        const data = await res.json();
+        setErrorMessage(data.detail || 'لطفاً ۶۰ ثانیه صبر کنید');
+        setCooldown(60);
+        return;
+      }
+      
+      if (!res.ok) throw new Error('Failed to send OTP');
+      
+      // ✅ Mark as sent and start cooldown
+      setIsOtpSent(true);
+      setCooldown(60);
+    } catch (err) {
+      setErrorMessage('خطا در ارسال کد تایید');
+      console.error(err);
+    }
+  };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -33,10 +74,18 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone })
       });
-      if (res.ok) setStep(2);
-      else setError('خطا در ارسال کد');
-    } catch { setError('خطای شبکه'); }
-    finally { setLoading(false); }
+      if (res.ok) {
+        setStep(2);
+        setIsOtpSent(true); // ✅ Mark as sent
+        setCooldown(60);    // ✅ Start cooldown
+      } else {
+        setError('خطا در ارسال کد');
+      }
+    } catch { 
+      setError('خطای شبکه'); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handleVerifyOtp = async (e) => {
@@ -49,6 +98,16 @@ const Login = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone, otp_code: otp })
       });
+      
+      // Handle 429 Too Many Requests
+      if (res.status === 429) {
+        const data = await res.json();
+        setErrorMessage(data.detail || 'تعداد تلاش‌های ناموفق بیش از حد است');
+        setCooldown(60);
+        setLoading(false);
+        return;
+      }
+      
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('token', data.access_token);
@@ -60,9 +119,13 @@ const Login = () => {
         }
       } else {
         setError(data.detail || 'کد نامعتبر است');
+        setOtp(''); // ✅ Automatically clear the wrong code
       }
-    } catch { setError('خطای شبکه'); }
-    finally { setLoading(false); }
+    } catch { 
+      setError('خطای شبکه'); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handlePartnerSubmit = async (e) => {
@@ -83,7 +146,6 @@ const Login = () => {
       });
       
       if (res.ok) {
-        // ✅ Save name and business to localStorage for this specific phone number
         const saved = localStorage.getItem(`venix_data_${phone}`);
         const data = saved ? JSON.parse(saved) : {};
         data.fullName = `${firstName} ${lastName}`.trim();
@@ -96,8 +158,11 @@ const Login = () => {
         const err = await res.json();
         setError(err.detail || 'خطا در ثبت درخواست');
       }
-    } catch { setError('خطای شبکه'); }
-    finally { setLoading(false); }
+    } catch { 
+      setError('خطای شبکه'); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (
@@ -123,8 +188,9 @@ const Login = () => {
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="relative">
                 <FiUser className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="شماره موبایل (0912...)" required className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white outline-none focus:border-primary transition" dir="ltr" />
+                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09XXXXXXXXX" required className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white outline-none focus:border-primary transition" dir="ltr" />
               </div>
+              
               <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
                 {loading ? '...' : 'دریافت کد تایید'} <FiArrowLeft />
               </button>
@@ -135,12 +201,32 @@ const Login = () => {
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="relative">
                 <FiLock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="کد 5 رقمی" required maxLength="5" className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white text-center text-2xl tracking-widest outline-none focus:border-primary transition" dir="ltr" />
+                <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="12345" required maxLength="5" inputMode="numeric" className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white text-center text-2xl tracking-widest outline-none focus:border-primary transition" dir="ltr" />
               </div>
+              
+              {/* ✅ ONLY show resend/countdown AFTER the first code is sent */}
+              {isOtpSent && cooldown > 0 && (
+                <p className="text-center text-gray-400 text-sm mb-4">
+                  ارسال مجدد کد در {cooldown} ثانیه
+                </p>
+              )}
+              {isOtpSent && cooldown === 0 && (
+                <button 
+                  type="button" 
+                  onClick={requestOTP}
+                  className="text-primary text-sm hover:underline mb-4 block w-full text-center"
+                >
+                  ارسال مجدد کد تایید
+                </button>
+              )}
+              {errorMessage && (
+                <p className="text-red-400 text-sm text-center mb-4">{errorMessage}</p>
+              )}
+              
               <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition">
                 {loading ? '...' : 'ورود به حساب'}
               </button>
-              <button type="button" onClick={() => setStep(1)} className="w-full text-gray-400 text-sm hover:text-white">تغییر شماره</button>
+              <button type="button" onClick={() => { setStep(1); setIsOtpSent(false); setCooldown(0); setErrorMessage(''); }} className="w-full text-gray-400 text-sm hover:text-white">تغییر شماره</button>
             </form>
           )}
 
@@ -152,6 +238,7 @@ const Login = () => {
               </div>
               <input type="text" placeholder="نام فروشگاه / شرکت" value={businessName} onChange={e => setBusinessName(e.target.value)} required className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
               <textarea placeholder="توضیحات یا مدارک (اختیاری)" value={businessDesc} onChange={e => setBusinessDesc(e.target.value)} rows="3" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+              
               <button type="submit" disabled={loading} className="w-full bg-button hover:bg-button/90 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
                 <FiBriefcase /> {loading ? '...' : 'ثبت درخواست همکاری'}
               </button>
