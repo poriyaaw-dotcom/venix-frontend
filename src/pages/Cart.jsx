@@ -49,35 +49,36 @@ const Cart = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
           <div className="space-y-4">
             {cartItems.map((item) => {
-              // ✅ FIX: Check if there is an actual discount
+              // ✅ FIX: Safely get the unique identifier (variant_id or id)
+              const itemId = item.variant_id || item.id;
               const hasDiscount = item.discount > 0;
               const finalPrice = hasDiscount ? item.discountPrice : item.price;
               
               return (
-                <div key={item.id} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
-                  <Link to={`/product/${item.id}`} className="w-full sm:w-28 h-28 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
+                <div key={itemId} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
+                  <Link to={`/product/${item.product_id || item.id}`} className="w-full sm:w-28 h-28 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
                     <img src={item.image} alt={item.title} className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" />
                   </Link>
 
                   <div className="flex-1 w-full text-center sm:text-right">
-                    <Link to={`/product/${item.id}`} className="text-base font-bold text-white hover:text-primary transition line-clamp-2">
+                    <Link to={`/product/${item.product_id || item.id}`} className="text-base font-bold text-white hover:text-primary transition line-clamp-2">
                       {item.title}
                     </Link>
                     <p dir="ltr" className="text-xs text-gray-500 mt-1 text-right">{item.titleEn}</p>
                   </div>
 
                   <div className="flex items-center border border-white/10 rounded-xl overflow-hidden bg-white/[0.025]">
-                    <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
+                    {/* ✅ FIX: Use itemId to ensure CartContext finds the correct item */}
+                    <button onClick={() => updateQuantity(itemId, item.quantity - 1)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
                       <FiMinus className="w-4 h-4" />
                     </button>
                     <span className="w-9 text-center text-sm font-bold text-white">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
+                    <button onClick={() => updateQuantity(itemId, item.quantity + 1)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
                       <FiPlus className="w-4 h-4" />
                     </button>
                   </div>
 
                   <div className="text-center sm:text-left w-full sm:w-auto">
-                    {/* ✅ FIX: Only show crossed-out old price if there is a discount */}
                     {hasDiscount && (
                       <div className="text-xs text-gray-500 line-through mb-1">{formatPrice(item.price * item.quantity)}</div>
                     )}
@@ -85,7 +86,8 @@ const Cart = () => {
                     <div className="text-[10px] text-gray-500 font-medium">تومان</div>
                   </div>
 
-                  <button onClick={() => removeFromCart(item.id)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition">
+                  {/* ✅ FIX: Use itemId for removal */}
+                  <button onClick={() => removeFromCart(itemId)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition">
                     <FiTrash2 className="w-4 h-4" />
                   </button>
                 </div>

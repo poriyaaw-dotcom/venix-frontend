@@ -13,7 +13,7 @@ const Admin = () => {
   const [isAuthorized, setIsAuthorized] = useState(null);
   
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null); // For edit mode
+  const [editingProduct, setEditingProduct] = useState(null);
   const [partnerRequests, setPartnerRequests] = useState([]);
   const [productsList, setProductsList] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -97,13 +97,37 @@ const Admin = () => {
     fetchData();
   }, [activeTab, isAuthorized]);
 
+  // ✅ NEW: Helper functions for clean status display
+  const getStatusLabel = (status) => {
+    switch(status) {
+      case 'pending_payment': return 'در انتظار پرداخت';
+      case 'paid': return 'پرداخت شده';
+      case 'processing': return 'در حال پردازش';
+      case 'delivered': return 'ارسال شده';
+      case 'cancelled': return 'لغو شده';
+      case 'refunded': return 'مرجوع شده';
+      default: return status;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'pending_payment': return 'bg-yellow-500/20 text-yellow-400';
+      case 'paid': return 'bg-green-500/20 text-green-400';
+      case 'processing': return 'bg-blue-500/20 text-blue-400';
+      case 'delivered': return 'bg-purple-500/20 text-purple-400';
+      case 'cancelled': return 'bg-red-500/20 text-red-400';
+      case 'refunded': return 'bg-orange-500/20 text-orange-400';
+      default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
   const handleCreateOrUpdateProduct = async () => {
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     try {
       let productId = editingProduct ? editingProduct.id : null;
 
-      // 1. Create or Update Basic Product Info
       if (!editingProduct) {
         const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { 
           method: 'POST', headers, 
@@ -118,7 +142,6 @@ const Admin = () => {
         const productData = await res1.json();
         productId = productData.id;
       } else {
-        // UPDATE existing product with ALL data (basic + attributes + variants)
         await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
           method: 'PUT', headers,
           body: JSON.stringify({
@@ -141,7 +164,6 @@ const Admin = () => {
         });
       }
 
-      // 2. Handle attributes and variants for NEW products only (PUT handles updates)
       if (!editingProduct && productId) {
         for (const attr of productForm.attributes) {
           if (!attr.name) continue;
@@ -204,9 +226,6 @@ const Admin = () => {
     }
   };
 
-  
-
-
   const [newCatName, setNewCatName] = useState('');
   const handleEditProduct = async (product) => {
     setEditingProduct(product);
@@ -220,8 +239,6 @@ const Admin = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log("✅ Loaded product data for edit:", data);
-        
         setProductForm({
           title: data.title || '',
           title_en: data.title_en || '',
@@ -277,6 +294,7 @@ const Admin = () => {
       else alert('خطا در حذف دسته‌بندی');
     } catch (error) { alert('خطای شبکه'); }
   };
+
   const handleAddBrand = async (e) => {
     e.preventDefault();
     if (!newBrandName.trim()) return;
@@ -315,7 +333,6 @@ const Admin = () => {
     }
   };
 
-  // ... (Keep handleApprove, handleReject, handleUpdateOrderStatus, handleToggleProductStatus as they were) ...
   const handleApprove = async (id) => {
     const token = localStorage.getItem('token');
     try {
@@ -354,7 +371,10 @@ const Admin = () => {
         const res2 = await fetch(`${API_BASE_URL}/admin/orders`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setOrders(await res2.json());
         setSelectedOrder(null);
-      } else { alert('خطا در بروزرسانی'); }
+      } else { 
+        const errData = await res.json();
+        alert(errData.detail || 'خطا در بروزرسانی'); 
+      }
     } catch (error) { alert('خطای شبکه'); }
   };
 
@@ -391,13 +411,13 @@ const Admin = () => {
     { id: 'orders', label: 'مدیریت سفارشات', icon: FiShoppingBag },
     { id: 'products', label: 'مدیریت محصولات', icon: FiPackage },
     { id: 'brands', label: 'مدیریت برندها', icon: FiTag },
-    { id: 'categories', label: 'مدیریت دسته‌بندی‌ها', icon: FiTag }, // ✅ NEW
+    { id: 'categories', label: 'مدیریت دسته‌بندی‌ها', icon: FiTag },
     { id: 'customers', label: 'درخواست‌های همکاری', icon: FiUsers },
     { id: 'logs', label: 'گزارشات سیستم', icon: FiFileText },
   ];
 
   const filteredProducts = productsList.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(productSearch.toLowerCase()) || p.title_en.toLowerCase().includes(productSearch.toLowerCase());
+    const matchesSearch = p.title.toLowerCase().includes(productSearch.toLowerCase()) || (p.title_en && p.title_en.toLowerCase().includes(productSearch.toLowerCase()));
     return showDeactivatedOnly ? (matchesSearch && p.is_active === false) : matchesSearch;
   });
 
@@ -459,28 +479,19 @@ const Admin = () => {
               </div>
             </div>
           )}
+
           {activeTab === 'categories' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت دسته‌بندی‌ها</h1>
               <form onSubmit={handleAddCategory} className="flex gap-4 mb-8">
-                <input 
-                  type="text" 
-                  placeholder="نام دسته‌بندی جدید" 
-                  value={newCatName} 
-                  onChange={(e) => setNewCatName(e.target.value)} 
-                  className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" 
-                />
+                <input type="text" placeholder="نام دسته‌بندی جدید" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
                 <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن دسته‌بندی</button>
               </form>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {categories.map(cat => (
                   <div key={cat.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
                     <h3 className="font-bold text-white">{cat.name}</h3>
-                    <button 
-                      onClick={() => handleDeleteCategory(cat.id)} 
-                      className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" 
-                      title="حذف"
-                    >
+                    <button onClick={() => handleDeleteCategory(cat.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                   </div>
@@ -488,28 +499,19 @@ const Admin = () => {
               </div>
             </div>
           )}
+
           {activeTab === 'brands' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت برندها</h1>
               <form onSubmit={handleAddBrand} className="flex gap-4 mb-8">
-                <input 
-                  type="text" 
-                  placeholder="نام برند جدید" 
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary"
-                />
+                <input type="text" placeholder="نام برند جدید" value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
                 <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن برند</button>
               </form>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {brands.map(brand => (
                   <div key={brand.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
                     <h3 className="font-bold text-white">{brand.name}</h3>
-                    <button 
-                      onClick={() => handleDeleteBrand(brand.id)}
-                      className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100"
-                      title="حذف برند"
-                    >
+                    <button onClick={() => handleDeleteBrand(brand.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف برند">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                   </div>
@@ -525,15 +527,11 @@ const Admin = () => {
                 <div className="flex gap-2">
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
                   <button onClick={() => { 
-    setEditingProduct(null); 
-    setProductForm({ 
-      title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', 
-      attributes: [{ name: '', values: [''] }], 
-      variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] 
-    }); 
-    setIsAddProductOpen(true); 
-    setProductTab('base'); 
-  }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
+                    setEditingProduct(null); 
+                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] }); 
+                    setIsAddProductOpen(true); 
+                    setProductTab('base'); 
+                  }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
                     <FiPlus /> افزودن محصول جدید
                   </button>
                 </div>
@@ -565,7 +563,6 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ... (Keep orders, customers, logs tabs exactly as they were) ... */}
           {activeTab === 'orders' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت سفارشات</h1>
@@ -578,8 +575,9 @@ const Admin = () => {
                       <p className="text-xs text-gray-400">{order.province}، {order.city} | {order.total_items} کالا</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-3 py-1 rounded-lg ${order.status === 'pending_payment' ? 'bg-yellow-500/20 text-yellow-400' : order.status === 'paid' ? 'bg-green-500/20 text-green-400' : order.status === 'processing' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
-                        {order.status === 'pending_payment' ? 'در انتظار پرداخت' : order.status === 'paid' ? 'پرداخت شده' : order.status === 'processing' ? 'در حال پردازش' : 'ارسال شده'}
+                      {/* ✅ FIXED: Uses helper functions for clean, accurate status display */}
+                      <span className={`text-xs px-3 py-1 rounded-lg ${getStatusColor(order.status)}`}>
+                        {getStatusLabel(order.status)}
                       </span>
                       <span className="text-white font-bold">{parseFloat(order.total_price).toLocaleString()} تومان</span>
                       <button onClick={() => setSelectedOrder(order)} className="text-primary hover:text-primary/80 p-2 bg-white/5 rounded-lg"><FiEdit2 /></button>
@@ -639,7 +637,6 @@ const Admin = () => {
             </div>
           )}
 
-          {/* ✅ REVAMPED: Tabbed, Dynamic Add/Edit Product Modal */}
           {isAddProductOpen && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
               <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
@@ -651,9 +648,7 @@ const Admin = () => {
                 <div className="flex border-b border-white/10 mb-6">
                   <button onClick={() => setProductTab('base')} className={`py-3 px-6 font-bold transition ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button>
                   <button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. ویژگی‌ها و مشخصات</button>
-
                   <button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button>
-
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2 mb-6">
@@ -661,27 +656,14 @@ const Admin = () => {
                     <div className="space-y-4">
                       <input type="text" placeholder="نام محصول" value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
                       <input type="text" placeholder="نام محصول (انگلیسی)" value={productForm.title_en} onChange={e => setProductForm({...productForm, title_en: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
-                      
-                      {/* ✅ CATEGORY DROPDOWN */}
-                      <select 
-                        value={productForm.category_id} 
-                        onChange={e => setProductForm({...productForm, category_id: e.target.value})}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4"
-                      >
+                      <select value={productForm.category_id} onChange={e => setProductForm({...productForm, category_id: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4">
                         <option value="">انتخاب دسته‌بندی (اختیاری)</option>
                         {categories.map(c => <option key={c.id} value={c.id} className="text-black">{c.name}</option>)}
                       </select>
-
-                      {/* ✅ BRAND DROPDOWN */}
-                      <select 
-                        value={productForm.brand_id} 
-                        onChange={e => setProductForm({...productForm, brand_id: e.target.value})}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none"
-                      >
+                      <select value={productForm.brand_id} onChange={e => setProductForm({...productForm, brand_id: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none">
                         <option value="">انتخاب برند (اختیاری)</option>
                         {brands.map(b => <option key={b.id} value={b.id} className="text-black">{b.name}</option>)}
                       </select>
-
                       <div className="relative">
                         <FiImage className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
                         <input type="text" placeholder="لینک تصویر محصول (URL)" value={productForm.image_url} onChange={e => setProductForm({...productForm, image_url: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl pr-12 pl-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
@@ -824,11 +806,34 @@ const Admin = () => {
                     <p className="text-sm text-gray-400 mb-2">اقلام سفارش</p>
                     <p className="text-white text-sm">{selectedOrder.total_items} قلم کالا - مجموع: {parseFloat(selectedOrder.total_price).toLocaleString()} تومان</p>
                   </div>
+                  
+                  {/* ✅ UPDATED: Clean Dropdown without "تکمیل شده" or parentheses */}
                   <div className="border-t border-white/10 pt-4">
                     <p className="text-sm text-gray-400 mb-2">تغییر وضعیت سفارش</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'processing')} className="bg-blue-500/20 text-blue-400 py-2 rounded-lg hover:bg-blue-500/30 font-bold">در حال پردازش (بسته‌بندی)</button>
-                      <button onClick={() => handleUpdateOrderStatus(selectedOrder.id, 'delivered')} className="bg-purple-500/20 text-purple-400 py-2 rounded-lg hover:bg-purple-500/30 font-bold">ارسال شده</button>
+                    <div className="flex gap-2">
+                      <select 
+                        id="order-status-select"
+                        defaultValue={selectedOrder.status}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary"
+                      >
+                        <option value="pending_payment">در انتظار پرداخت</option>
+                        <option value="paid">پرداخت شده</option>
+                        <option value="processing">در حال پردازش</option>
+                        <option value="delivered">ارسال شده</option>
+                        <option value="cancelled">لغو شده</option>
+                        <option value="refunded">مرجوع شده</option>
+                      </select>
+                      <button 
+                        onClick={() => {
+                          const selectElement = document.getElementById('order-status-select');
+                          if (selectElement) {
+                            handleUpdateOrderStatus(selectedOrder.id, selectElement.value);
+                          }
+                        }} 
+                        className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-bold transition"
+                      >
+                        اعمال تغییرات
+                      </button>
                     </div>
                   </div>
                 </div>
