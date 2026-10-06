@@ -22,7 +22,8 @@ import Login from './pages/Login';
 import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
-import Admin from './pages/Admin'; 
+import Admin from './pages/Admin';
+import CardToCardPayment from './pages/CardToCardPayment'; 
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/card-to-card" element={<CardToCardPayment />} />
           <Route path="/admin" element={<Admin />} /> 
         </Routes>
       </Router>

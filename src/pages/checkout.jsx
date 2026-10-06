@@ -52,13 +52,8 @@ const Checkout = () => {
       // Clear cart only after successful order creation
       clearCart();
       
-      if (paymentData.payment_url) {
-        window.location.href = paymentData.payment_url;
-      } else {
-        // Fallback if payment gateway URL is not yet returned by backend
-        alert(`سفارش با موفقیت ثبت شد! \nشماره سفارش: ${paymentData.order_id}\nمبلغ: ${paymentData.total_price} تومان`);
-        navigate('/'); 
-      }
+      // Redirect to Card-to-Card payment page with order details
+      navigate(`/card-to-card?orderId=${paymentData.order_id}&amount=${paymentData.total_price}`);
     } catch (err) {
       console.error("Checkout error:", err);
       setError(err.message || 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.');

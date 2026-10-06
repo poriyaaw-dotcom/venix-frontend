@@ -2,7 +2,7 @@ import toast from 'react-hot-toast';
 // src/pages/Admin.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag } from 'react-icons/fi';
+import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -23,6 +23,8 @@ const Admin = () => {
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [newBrandName, setNewBrandName] = useState('');
+  const [bankInfo, setBankInfo] = useState({ bank_name: '', account_holder_name: '', card_number: '', sheba_number: '' });
+  const [isEditingBank, setIsEditingBank] = useState(false);
   
   const [dashboardStats, setDashboardStats] = useState({ 
     total_users: 0, total_products: 0, pending_requests: 0,
@@ -89,6 +91,8 @@ const Admin = () => {
         } else if (activeTab === 'brands') {
           const res = await fetch(`${API_BASE_URL}/admin/brands`, { headers });
           if (res.ok) setBrands(await res.json());
+        } else if (activeTab === 'bank-info') {
+          fetchBankInfo();
         } else if (activeTab === 'categories') {
           const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers });
           if (resCats.ok) setCategories(await resCats.json());
@@ -379,6 +383,36 @@ const Admin = () => {
     } catch (error) { toast.error('خطای شبکه'); }
   };
 
+
+  const fetchBankInfo = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/payment/admin/bank-info`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data) setBankInfo(data);
+      }
+    } catch (error) { console.error(error); }
+  };
+
+  const handleSaveBankInfo = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/payment/admin/bank-info`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(bankInfo)
+      });
+      if (res.ok) {
+        toast.success('اطلاعات بانکی با موفقیت بروزرسانی شد');
+        setIsEditingBank(false);
+      } else {
+        toast.error('خطا در بروزرسانی اطلاعات');
+      }
+    } catch (error) { toast.error('خطای شبکه'); }
+  };
+
   const handleToggleProductStatus = async (productId, currentActive) => {
     const token = localStorage.getItem('token');
     try {
@@ -415,6 +449,7 @@ const Admin = () => {
     { id: 'categories', label: 'مدیریت دسته‌بندی‌ها', icon: FiTag },
     { id: 'customers', label: 'درخواست‌های همکاری', icon: FiUsers },
     { id: 'logs', label: 'گزارشات سیستم', icon: FiFileText },
+    { id: 'bank-info', label: 'اطلاعات بانکی', icon: FiCreditCard },
   ];
 
   const filteredProducts = productsList.filter(p => {
@@ -574,6 +609,12 @@ const Admin = () => {
                       <h3 className="font-bold text-white">سفارش #{order.id}</h3>
                       <p className="text-xs text-gray-400">مشتری: {order.user_name} ({order.user_phone})</p>
                       <p className="text-xs text-gray-400">{order.province}، {order.city} | {order.total_items} کالا</p>
+                      {order.bank_tracking_number && (
+                        <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                          <span>شماره پیگیری: {order.bank_tracking_number}</span>
+                          <span className="text-gray-500">({new Date(order.paid_at).toLocaleString('fa-IR')})</span>
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       {/* ✅ FIXED: Uses helper functions for clean, accurate status display */}
@@ -619,6 +660,41 @@ const Admin = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'bank-info' && (
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-6">مدیریت اطلاعات بانکی (کارت به کارت)</h1>
+              <div className="bg-white/[0.025] border border-white/10 rounded-xl p-6 max-w-2xl">
+                {!isEditingBank ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                      <h3 className="text-lg font-bold text-primary">اطلاعات فعلی</h3>
+                      <button onClick={() => setIsEditingBank(true)} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition">ویرایش اطلاعات</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div><p className="text-gray-400">نام بانک</p><p className="text-white font-bold">{bankInfo.bank_name || 'تنظیم نشده'}</p></div>
+                      <div><p className="text-gray-400">نام صاحب حساب</p><p className="text-white font-bold">{bankInfo.account_holder_name || 'تنظیم نشده'}</p></div>
+                      <div><p className="text-gray-400">شماره کارت</p><p className="text-white font-bold font-mono" dir="ltr">{bankInfo.card_number || '---'}</p></div>
+                      <div><p className="text-gray-400">شماره شبا</p><p className="text-white font-bold font-mono" dir="ltr">{bankInfo.sheba_number || '---'}</p></div>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSaveBankInfo} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input required placeholder="نام بانک (مثال: بانک رسالت)" value={bankInfo.bank_name} onChange={e => setBankInfo({...bankInfo, bank_name: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+                      <input required placeholder="نام صاحب حساب" value={bankInfo.account_holder_name} onChange={e => setBankInfo({...bankInfo, account_holder_name: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+                      <input required placeholder="شماره کارت (16 رقم)" value={bankInfo.card_number} onChange={e => setBankInfo({...bankInfo, card_number: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary font-mono" dir="ltr" maxLength="16" />
+                      <input required placeholder="شماره شبا (IR...)" value={bankInfo.sheba_number} onChange={e => setBankInfo({...bankInfo, sheba_number: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary font-mono" dir="ltr" />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition">ذخیره تغییرات</button>
+                      <button type="button" onClick={() => { setIsEditingBank(false); fetchBankInfo(); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           )}
