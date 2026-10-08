@@ -20,6 +20,9 @@ const ProductDetail = () => {
   const [activeTab, setActiveTab] = useState('description');
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -29,7 +32,21 @@ const ProductDetail = () => {
       setProduct(data);
       setLoading(false);
     };
+    
+    const loadReviews = async () => {
+      try {
+        const res = await fetch(`http://127.0.0.1:8000/api/v1/reviews/product/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setReviews(data);
+        }
+      } catch (err) {
+        console.error("Failed to load reviews", err);
+      }
+    };
+
     loadProduct();
+    loadReviews();
   }, [id]);
 
   if (loading) return <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center"><span className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></span></div>;
@@ -92,8 +109,12 @@ const ProductDetail = () => {
             <h1 className="text-3xl lg:text-4xl font-black text-white leading-tight">{product.title}</h1>
             <p dir="ltr" className="text-sm text-gray-500 mt-2 text-right">{product.titleEn}</p>
             <div className="flex items-center gap-3 mt-5 pb-6 border-b border-white/10">
-              <StarRating filled={5} />
-              <span className="text-xs text-gray-400">۵ از ۵</span>
+              <StarRating filled={Math.round(product.average_rating || 0)} />
+              <span className="text-xs text-gray-400">
+                {product.average_rating ? product.average_rating.toFixed(1) : '۰'} از ۵ 
+                <span className="mx-1">|</span> 
+                {product.review_count || 0} نظر ثبت شده
+              </span>
             </div>
             <p className="text-sm text-gray-400 leading-7 mt-6">{product.description}</p>
             
@@ -175,6 +196,83 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* --- REVIEWS SECTION --- */}
+      <section className="max-w-[1240px] mx-auto px-4 py-8 border-t border-white/10 mt-8">
+        <h2 className="text-2xl font-bold text-white mb-6">نظرات کاربران</h2>
+        
+        {/* Submit Review Form */}
+        <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-6 mb-8">
+          <h3 className="text-lg font-bold text-white mb-4">ثبت نظر جدید</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm text-gray-400">امتیاز شما:</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setReviewRating(star)}>
+                  <FiStar className={`w-6 h-6 ${star <= reviewRating ? 'text-primary fill-primary' : 'text-gray-600'}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea 
+            placeholder="نظر خود را درباره این محصول بنویسید..." 
+            value={reviewComment}
+            onChange={(e) => setReviewComment(e.target.value)}
+            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-24 mb-4"
+          />
+          <button 
+            onClick={async () => {
+              const token = localStorage.getItem('token');
+              if (!token) {
+                alert('لطفاً ابتدا وارد حساب کاربری خود شوید.');
+                return;
+              }
+              try {
+                const res = await fetch(`http://127.0.0.1:8000/api/v1/reviews/?product_id=${id}`, {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
+                });
+                if (res.ok) {
+                  alert('نظر شما با موفقیت ثبت شد و پس از تایید مدیر نمایش داده خواهد شد.');
+                  setReviewComment('');
+                  setReviewRating(5);
+                } else {
+                  const err = await res.json();
+                  alert(err.detail || 'خطا در ثبت نظر');
+                }
+              } catch (err) {
+                alert('خطای شبکه');
+              }
+            }}
+            className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-xl font-bold transition flex items-center gap-2"
+          >
+            <FiSend className="w-4 h-4" /> ارسال نظر
+          </button>
+        </div>
+
+        {/* Reviews List */}
+        <div className="space-y-4">
+          {reviews.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">هنوز نظری برای این محصول ثبت نشده است.</p>
+          ) : (
+            reviews.map((review) => (
+              <div key={review.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <StarRating filled={review.rating} size="w-3 h-3" />
+                    <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('fa-IR')}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-300 leading-7">{review.comment || 'بدون متن'}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
       <Footer />
     </div>
   );

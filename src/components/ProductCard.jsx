@@ -5,15 +5,27 @@ import { Link } from 'react-router-dom';
 import { formatPrice } from '../utils/api';
 
 const ProductCard = ({ product, onAddToCart }) => {
-  const hasDiscount = product.discount > 0;
-  const displayPrice = hasDiscount ? product.discountPrice : product.price;
+  // Get the first variant to display on the card
+  const firstVariant = product.variants?.[0] || {};
+  const hasDiscount = firstVariant.discount_percent > 0;
+  const displayPrice = firstVariant.final_price || 0;
+  const oldPrice = firstVariant.base_price || 0;
+  const discountPercent = firstVariant.discount_percent || 0;
+  
+  // DEBUG LOG: Let's see exactly what the browser is calculating
+  console.log("ProductCard Debug:", { 
+    title: product.title, 
+    final_price: firstVariant.final_price, 
+    displayPrice: displayPrice,
+    hasDiscount: hasDiscount 
+  });
 
   return (
     <Link to={`/product/${product.id}`} className="block w-[201px] h-[272px] bg-[#FDF8E8]/40 backdrop-blur-sm rounded-[20px] p-3 relative flex flex-col shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] transition-all duration-300 border border-white/40 overflow-hidden flex-shrink-0 group">
       
       {hasDiscount && (
         <div className="absolute top-0 right-0 bg-button text-white px-3 py-1.5 rounded-bl-xl font-bold text-xs shadow-md z-20">
-          {formatPrice(product.discount)}%
+          {discountPercent}%
         </div>
       )}
 
@@ -38,9 +50,9 @@ const ProductCard = ({ product, onAddToCart }) => {
 
       <div className="flex items-center justify-between mt-auto" onClick={(e) => e.preventDefault()}>
         <div className="flex flex-col">
-          {hasDiscount && product.oldPrice && (
+          {hasDiscount && oldPrice > 0 && (
             <span className="text-black/40 text-[10px] line-through decoration-black/40 mb-0.5">
-              {formatPrice(product.oldPrice)} تومان
+              {formatPrice(oldPrice)} تومان
             </span>
           )}
           <span className="text-black font-bold text-sm">

@@ -2,7 +2,7 @@ import toast from 'react-hot-toast';
 // src/pages/Admin.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard } from 'react-icons/fi';
+import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -20,6 +20,7 @@ const Admin = () => {
   const [logs, setLogs] = useState([]);
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [pendingReviews, setPendingReviews] = useState([]);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [newBrandName, setNewBrandName] = useState('');
@@ -41,7 +42,7 @@ const Admin = () => {
   const [productForm, setProductForm] = useState({
     title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '',
     attributes: [{ name: '', values: [''] }],
-    variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }]
+    variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }]
   });
 
   useEffect(() => {
@@ -96,6 +97,9 @@ const Admin = () => {
         } else if (activeTab === 'categories') {
           const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers });
           if (resCats.ok) setCategories(await resCats.json());
+        } else if (activeTab === 'reviews') {
+          const res = await fetch(`${API_BASE_URL}/reviews/admin/pending`, { headers });
+          if (res.ok) setPendingReviews(await res.json());
         }
       } catch (error) { console.error(error); }
     };
@@ -161,7 +165,11 @@ const Admin = () => {
             variants: productForm.variants.map(v => ({
               id: v.id,
               sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              price: parseFloat(v.price) || 0,
+              price_normal: parseFloat(v.price_normal) || 0,
+              price_visitor: parseFloat(v.price_visitor) || 0,
+              price_shop_owner: parseFloat(v.price_shop_owner) || 0,
+              price_wholesale: parseFloat(v.price_wholesale) || 0,
+              discount_percent: parseInt(v.discount_percent) || 0,
               stock_quantity: parseInt(v.stock_quantity) || 0,
               selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
             }))
@@ -189,11 +197,12 @@ const Admin = () => {
             method: 'POST', headers,
             body: JSON.stringify({ 
               sku: variant.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              purchase_cost: parseFloat(variant.price) || 0,
-              price_normal: parseFloat(variant.price) || 0,
-              price_visitor: parseFloat(variant.price) || 0,
-              price_shop_owner: parseFloat(variant.price) || 0,
-              price_wholesale: parseFloat(variant.price) || 0,
+              purchase_cost: parseFloat(variant.price_normal) || 0,
+              price_normal: parseFloat(variant.price_normal) || 0,
+              price_visitor: parseFloat(variant.price_visitor) || 0,
+              price_shop_owner: parseFloat(variant.price_shop_owner) || 0,
+              price_wholesale: parseFloat(variant.price_wholesale) || 0,
+              discount_percent: parseInt(variant.discount_percent) || 0,
               stock_quantity: parseInt(variant.stock_quantity) || 0, 
               attribute_value_ids: validSelectedIds
             })
@@ -204,7 +213,7 @@ const Admin = () => {
       toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
       setIsAddProductOpen(false);
       setEditingProduct(null);
-      setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] });
+      setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }] });
       const resList = await fetch(`${API_BASE_URL}/admin/products`, { headers });
       if (resList.ok) setProductsList(await resList.json());
     } catch (error) {
@@ -258,11 +267,15 @@ const Admin = () => {
             ? data.variants.map(v => ({
                 id: v.id,
                 sku: v.sku || '',
-                price: String(v.price || ''),
+                price_normal: String(v.price_normal || ''),
+                price_visitor: String(v.price_visitor || ''),
+                price_shop_owner: String(v.price_shop_owner || ''),
+                price_wholesale: String(v.price_wholesale || ''),
+                discount_percent: String(v.discount_percent || ''),
                 stock_quantity: String(v.stock_quantity || ''),
                 selectedValueIds: v.selectedValueIds || []
               }))
-            : [{ price: '', stock_quantity: '', selectedValueIds: [] }]
+            : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', stock_quantity: '', selectedValueIds: [] }]
         });
       } else {
         toast.error('خطا در دریافت اطلاعات محصول');
@@ -449,6 +462,7 @@ const Admin = () => {
     { id: 'categories', label: 'مدیریت دسته‌بندی‌ها', icon: FiTag },
     { id: 'customers', label: 'درخواست‌های همکاری', icon: FiUsers },
     { id: 'logs', label: 'گزارشات سیستم', icon: FiFileText },
+    { id: 'reviews', label: 'مدیریت نظرات', icon: FiStar },
     { id: 'bank-info', label: 'اطلاعات بانکی', icon: FiCreditCard },
   ];
 
@@ -564,7 +578,7 @@ const Admin = () => {
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
                   <button onClick={() => { 
                     setEditingProduct(null); 
-                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price: '', stock_quantity: '', selectedValueIds: [] }] }); 
+                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }] }); 
                     setIsAddProductOpen(true); 
                     setProductTab('base'); 
                   }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
@@ -579,11 +593,14 @@ const Admin = () => {
                 </div>
               </div>
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                {filteredProducts.length === 0 ? <p className="text-gray-500 text-center py-10">محصولی یافت نشد.</p> : filteredProducts.map(p => (
+                {filteredProducts.length === 0 ? <p className="text-gray-500 text-center py-10">محصولی یافت نشد.</p> : filteredProducts.map((p, index) => (
                   <div key={p.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                    <div>
-                      <h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3>
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-bold text-gray-500 w-6 text-center bg-white/5 rounded-full py-1">{index + 1}</span>
+                      <div>
+                        <h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3>
                       <p className="text-xs text-gray-400">{p.title_en}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`text-xs px-3 py-1 rounded-lg ${p.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{p.is_active ? 'فعال' : 'غیرفعال'}</span>
@@ -714,6 +731,70 @@ const Admin = () => {
             </div>
           )}
 
+
+          {activeTab === 'reviews' && (
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-6">مدیریت نظرات کاربران</h1>
+              <div className="space-y-4">
+                {pendingReviews.length === 0 ? (
+                  <p className="text-gray-500 text-center py-10 bg-white/[0.025] border border-white/10 rounded-xl">هیچ نظر در انتظار تاییدی وجود ندارد.</p>
+                ) : (
+                  pendingReviews.map(review => (
+                    <div key={review.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-yellow-400 font-bold text-sm">امتیاز: {review.rating} از ۵</span>
+                          <span className="text-xs text-gray-500">|</span>
+                          <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleString('fa-IR')}</span>
+                        </div>
+                        <p className="text-sm text-gray-300 leading-relaxed">{review.comment || 'بدون متن'}</p>
+                        <p className="text-xs text-primary mt-2">کاربر ID: {review.user_id}</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button 
+                          onClick={async () => {
+                            const token = localStorage.getItem('token');
+                            try {
+                              const res = await fetch(`${API_BASE_URL}/reviews/${review.id}/approve`, { 
+                                method: 'POST', 
+                                headers: { 'Authorization': `Bearer ${token}` } 
+                              });
+                              if (res.ok) {
+                                setPendingReviews(pendingReviews.filter(r => r.id !== review.id));
+                                toast.success('نظر با موفقیت تایید شد');
+                              }
+                            } catch (err) { toast.error('خطا در تایید نظر'); }
+                          }}
+                          className="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg text-sm font-bold hover:bg-green-500/30 transition flex items-center gap-2"
+                        >
+                          <FiCheck /> تایید
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            const token = localStorage.getItem('token');
+                            try {
+                              const res = await fetch(`${API_BASE_URL}/reviews/${review.id}/reject`, { 
+                                method: 'DELETE', 
+                                headers: { 'Authorization': `Bearer ${token}` } 
+                              });
+                              if (res.ok) {
+                                setPendingReviews(pendingReviews.filter(r => r.id !== review.id));
+                                toast.success('نظر رد و حذف شد');
+                              }
+                            } catch (err) { toast.error('خطا در رد نظر'); }
+                          }}
+                          className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-bold hover:bg-red-500/30 transition flex items-center gap-2"
+                        >
+                          <FiX /> رد کردن
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           {isAddProductOpen && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
               <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
@@ -809,24 +890,34 @@ const Admin = () => {
                               })}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">قیمت فروش (تومان)</label>
-                              <input type="number" placeholder="قیمت" value={variant.price} onChange={e => {
-                                const newVariants = [...productForm.variants];
-                                newVariants[vIdx].price = e.target.value;
-                                setProductForm({...productForm, variants: newVariants});
-                              }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">قیمت کاربر عادی</label>
+                                <input type="number" placeholder="تومان" value={variant.price_normal} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_normal = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">قیمت ویزیتور</label>
+                                <input type="number" placeholder="تومان" value={variant.price_visitor} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_visitor = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">قیمت مغازه‌دار</label>
+                                <input type="number" placeholder="تومان" value={variant.price_shop_owner} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_shop_owner = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">قیمت عمده‌فروش</label>
+                                <input type="number" placeholder="تومان" value={variant.price_wholesale} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_wholesale = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">موجودی انبار</label>
-                              <input type="number" placeholder="موجودی" value={variant.stock_quantity} onChange={e => {
-                                const newVariants = [...productForm.variants];
-                                newVariants[vIdx].stock_quantity = e.target.value;
-                                setProductForm({...productForm, variants: newVariants});
-                              }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">درصد تخفیف (%)</label>
+                                <input type="number" min="0" max="100" placeholder="مثال: 20" value={variant.discount_percent} onChange={e => { const n = [...productForm.variants]; n[vIdx].discount_percent = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1">موجودی انبار</label>
+                                <input type="number" placeholder="موجودی" value={variant.stock_quantity} onChange={e => { const n = [...productForm.variants]; n[vIdx].stock_quantity = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                              </div>
                             </div>
-                          </div>
                         </div>
                       ))}
                       <button onClick={() => setProductForm(prev => ({...prev, variants: [...prev.variants, { price: '', stock_quantity: '', selectedValueIds: [] }]}))} className="w-full py-3 border-2 border-dashed border-white/20 text-gray-400 rounded-xl hover:border-primary hover:text-primary transition font-bold">

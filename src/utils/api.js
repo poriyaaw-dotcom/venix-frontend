@@ -24,6 +24,7 @@ export const fetchProducts = async () => {
     }
     
     const data = await response.json();
+    console.log("🔥 RAW BACKEND DATA:", data);
     const productsArray = Array.isArray(data) ? data : (data.items || []);
 
     return productsArray.map(product => {
@@ -37,10 +38,12 @@ export const fetchProducts = async () => {
         titleEn: product.title_en || product.title,
         price: price,
         discountPrice: price,
-        discount: 0,
+        discount: firstVariant.discount_percent || 0,
+        oldPrice: firstVariant.base_price || price,
         image: '/category-img.png',
         category: product.category?.name || 'دستگاه',
-        brand: product.brand?.name || 'generic'
+        brand: product.brand?.name || 'generic',
+        variants: product.variants || [] // Pass the variants array through!
       };
     });
   } catch (error) {

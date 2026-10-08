@@ -9,6 +9,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState({ phone: '', fullName: '', isAdmin: false, group: 'NORMAL', businessName: '' });
   const [addresses, setAddresses] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
@@ -20,30 +22,43 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     if (!token) { navigate('/login'); return; }
 
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-      const payload = JSON.parse(jsonPayload);
-      
-      const phone = payload.phone || '';
-      const group = payload.customer_group || 'NORMAL';
-      const isAdmin = payload.is_admin || false;
-      
-      const savedData = localStorage.getItem(`venix_data_${phone}`);
-      let parsedData = { fullName: payload.full_name || '', addresses: [], businessName: '' };
-      if (savedData) parsedData = JSON.parse(savedData);
+    const fetchData = async () => {
+      try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
+        // 1. Fetch real user profile
+        const userRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me', { headers });
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUserData({ 
+            phone: userData.phone_number, 
+            fullName: userData.full_name || '', 
+            isAdmin: userData.is_admin, 
+            group: userData.customer_group,
+            businessName: '' // Can be extended later
+          });
+          
+          const names = (userData.full_name || '').split(' ');
+          setFirstName(names[0] || '');
+          setLastName(names.slice(1).join(' ') || '');
+        }
 
-      setUserData({ phone, fullName: parsedData.fullName, isAdmin, group, businessName: parsedData.businessName });
-      setAddresses(parsedData.addresses || []);
-      
-      const names = (parsedData.fullName || '').split(' ');
-      setFirstName(names[0] || '');
-      setLastName(names.slice(1).join(' ') || '');
-    } catch (error) {
-      localStorage.removeItem('token');
-      navigate('/login');
-    }
+        // 2. Fetch real order history
+        setLoadingOrders(true);
+        const ordersRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me/orders', { headers });
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          setOrders(ordersData);
+        }
+        setLoadingOrders(false);
+
+      } catch (error) {
+        console.error("Failed to fetch profile data:", error);
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchData();
   }, [navigate]);
 
   const getRoleLabel = () => {
@@ -114,11 +129,55 @@ const Profile = () => {
 
           <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-8 min-h-[400px]">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><FiPackage className="w-5 h-5 text-primary" /> تاریخچه سفارشات</h3>
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <FiBox className="w-16 h-16 mb-4 opacity-30" />
-              <p className="text-lg">هنوز سفارشی ثبت نکرده‌اید.</p>
-              <button onClick={() => navigate('/shop')} className="mt-6 text-primary hover:underline font-bold">بازگشت به فروشگاه</button>
-            </div>
+            {loadingOrders ? (
+              <div className="flex justify-center py-12"><span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></span></div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <FiBox className="w-16 h-16 mb-4 opacity-30" />
+                <p className="text-lg">هنوز سفارشی ثبت نکرده‌اید.</p>
+                <button onClick={() => navigate('/shop')} className="mt-6 text-primary hover:underline font-bold">بازگشت به فروشگاه</button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((order) => {
+                  const statusColors = {
+                    pending_payment: 'bg-yellow-500/20 text-yellow-400',
+                    paid: 'bg-blue-500/20 text-blue-400',
+                    processing: 'bg-purple-500/20 text-purple-400',
+                    delivered: 'bg-green-500/20 text-green-400',
+                    cancelled: 'bg-red-500/20 text-red-400',
+                    refunded: 'bg-gray-500/20 text-gray-400',
+                    completed: 'bg-green-500/20 text-green-400'
+                  };
+                  const statusLabels = {
+                    pending_payment: 'در انتظار پرداخت',
+                    paid: 'پرداخت شده',
+                    processing: 'در حال پردازش',
+                    delivered: 'ارسال شده',
+                    cancelled: 'لغو شده',
+                    refunded: 'مرجوع شده',
+                    completed: 'تکمیل شده'
+                  };
+                  return (
+                    <div key={order.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="text-white font-bold">سفارش #{order.id}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-md ${statusColors[order.status] || 'bg-gray-500/20 text-gray-400'}`}>
+                            {statusLabels[order.status] || order.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-400">{new Date(order.created_at).toLocaleDateString('fa-IR')}</p>
+                      </div>
+                      <div className="text-left">
+                        <span className="text-primary font-black text-lg">{new Intl.NumberFormat('fa-IR').format(order.total_price)}</span>
+                        <span className="text-xs text-gray-500 mr-1">تومان</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </main>

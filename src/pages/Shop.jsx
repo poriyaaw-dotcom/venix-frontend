@@ -49,6 +49,9 @@ const Shop = () => {
   const safeCurrentPage = currentPage > totalPages ? 1 : currentPage;
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const currentProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage);
+  
+  // DEBUG: Let's see the raw data reaching the Shop page
+  console.log("Shop.jsx Raw Data:", currentProducts.length > 0 ? currentProducts[0] : "No products");
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
