@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 // src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +29,14 @@ const Profile = () => {
         
         // 1. Fetch real user profile
         const userRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me', { headers });
+        
+        // ✅ SECURITY FIX: If backend rejects token (401), kick user out
+        if (userRes.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
+        }
+
         if (userRes.ok) {
           const userData = await userRes.json();
           setUserData({ 
@@ -35,12 +44,19 @@ const Profile = () => {
             fullName: userData.full_name || '', 
             isAdmin: userData.is_admin, 
             group: userData.customer_group,
-            businessName: '' // Can be extended later
+            businessName: '' 
           });
           
           const names = (userData.full_name || '').split(' ');
           setFirstName(names[0] || '');
           setLastName(names.slice(1).join(' ') || '');
+
+          // ✅ ADDRESS FIX: Load addresses from localStorage fallback
+          const savedData = localStorage.getItem(`venix_data_${userData.phone_number}`);
+          if (savedData) {
+            const parsed = JSON.parse(savedData);
+            setAddresses(parsed.addresses || []);
+          }
         }
 
         // 2. Fetch real order history
@@ -72,16 +88,36 @@ const Profile = () => {
     localStorage.setItem(`venix_data_${userData.phone}`, JSON.stringify(dataToSave));
   };
 
-  const handleSaveInfo = () => {
+  const handleSaveInfo = async () => {
     const newFullName = `${firstName} ${lastName}`.trim();
-    setUserData({ ...userData, fullName: newFullName });
-    saveToStorage(newFullName, addresses, userData.businessName);
-    alert('اطلاعات با موفقیت ذخیره شد!');
-    setIsEditModalOpen(false);
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ full_name: newFullName })
+      });
+      
+      if (res.ok) {
+        setUserData({ ...userData, fullName: newFullName });
+        saveToStorage(newFullName, addresses, userData.businessName);
+        toast.success('اطلاعات با موفقیت در سرور ذخیره شد!');
+        setIsEditModalOpen(false);
+      } else {
+        toast.error('خطا در ذخیره اطلاعات');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('خطای شبکه');
+    }
   };
 
   const handleAddAddress = () => {
-    if (!newAddress.city || !newAddress.street) return alert('لطفا شهر و آدرس را وارد کنید');
+    if (!newAddress.city || !newAddress.street) return toast.error('لطفا شهر و آدرس را وارد کنید');
     const updatedAddresses = [...addresses, { ...newAddress, id: Date.now() }];
     setAddresses(updatedAddresses);
     saveToStorage(userData.fullName, updatedAddresses, userData.businessName);

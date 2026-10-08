@@ -12,6 +12,7 @@ const Header = () => {
   
   // Dynamic categories state fetched from backend
   const [categories, setCategories] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/v1/products/categories')
@@ -27,7 +28,7 @@ const Header = () => {
         console.error("Failed to load categories:", err);
         setCategories([]);
       });
-  }, []);
+    }, []);
 
   return (
     <header className="bg-background text-primary sticky top-0 z-50 shadow-lg py-4">
@@ -80,7 +81,15 @@ const Header = () => {
         {/* Left Side: Icons */}
         <div className="flex items-center gap-5 text-xl justify-end">
           <a href="tel:02134560" className="hover:scale-110 transition text-gray-200 hover:text-primary"><FiPhone /></a>
-          <button onClick={() => navigate('/login')} className="hover:scale-110 transition text-gray-200 hover:text-primary"><FiUser /></button>
+          <button 
+            onClick={() => {
+              const token = localStorage.getItem('token');
+              navigate(token ? '/profile' : '/login');
+            }} 
+            className="hover:scale-110 transition text-gray-200 hover:text-primary"
+          >
+            <FiUser />
+          </button>
           <Link to="/cart" className="hover:scale-110 transition relative text-gray-200 hover:text-primary">
             <FiShoppingCart />
             <span className="absolute -top-2 -right-2 bg-button text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">

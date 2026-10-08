@@ -17,7 +17,9 @@ export const toFarsiNumber = (n) => {
 // 1. Fetch All Products (For Shop Page)
 export const fetchProducts = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products/search?q=&sort_by=newest`);
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const response = await fetch(`${API_BASE_URL}/products/search?q=&sort_by=newest`, { headers });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch products: ${response.status}`);
@@ -55,7 +57,9 @@ export const fetchProducts = async () => {
 // 2. Fetch Single Product (For Product Detail Page)
 export const fetchProductById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const response = await fetch(`${API_BASE_URL}/products/${id}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch product');
     const product = await response.json();
     

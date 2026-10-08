@@ -191,7 +191,7 @@ const Admin = () => {
         }
 
         for (const variant of productForm.variants) {
-          if (!variant.price && !variant.stock_quantity) continue;
+          if (!variant.price_normal && !variant.stock_quantity) continue;
           const validSelectedIds = variant.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string');
           await fetch(`${API_BASE_URL}/admin/products/${productId}/variants`, {
             method: 'POST', headers,
@@ -440,6 +440,8 @@ const Admin = () => {
     } catch (error) { toast.error('خطای شبکه'); }
   };
 
+  console.log("ADMIN STATE: isAuthorized =", isAuthorized, "| activeTab =", activeTab);
+
   if (isAuthorized === false) {
     return (
       <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center">
@@ -477,6 +479,7 @@ const Admin = () => {
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
+
       <Header />
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 py-8 flex gap-6">
         <aside className="w-[250px] shrink-0 hidden md:block">
@@ -656,6 +659,10 @@ const Admin = () => {
                     <div>
                       <h3 className="font-bold text-white">{req.business_name}</h3>
                       <p className="text-sm text-gray-400">{req.description}</p>
+                      <div className="mt-2 flex gap-3 text-xs">
+                        <span className="bg-white/10 px-2 py-1 rounded text-primary">📞 {req.user?.phone_number || 'N/A'}</span>
+                        <span className="bg-white/10 px-2 py-1 rounded text-gray-300">👤 {req.user?.full_name || 'بدون نام'}</span>
+                      </div>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
                       {approvingId === req.id ? (
