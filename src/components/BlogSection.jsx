@@ -1,38 +1,60 @@
-import React, { useState } from 'react';
+// src/components/BlogSection.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const BlogSection = () => {
-  const [activeIndex, setActiveIndex] = useState(2);
+  const navigate = useNavigate();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const blogs = [
-    { id: 1, title: 'ویپ های پرو', desc: 'ساعت های خنک یکی از محبوب ترین انتخاب ها...' },
-    { id: 2, title: 'ویپ های پرو', desc: 'ساعت های خنک یکی از محبوب ترین انتخاب ها...' },
-    { id: 3, title: 'ویپ های پرو', desc: 'ساعت های خنک یکی از محبوب ترین انتخاب ها...' },
-    { id: 4, title: 'ویپ های پرو', desc: 'ساعت های خنک یکی از محبوب ترین انتخاب ها...' },
-    { id: 5, title: 'ویپ های پرو', desc: 'ساعت های خنک یکی از محبوب ترین انتخاب ها...' },
-  ];
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/v1/blog/');
+        if (res.ok) {
+          const data = await res.json();
+          // Filter only active blogs
+          const activeBlogs = data.filter(b => b.is_active).slice(0, 5); // Limit to 5 for the carousel design
+          setBlogs(activeBlogs);
+          if (activeBlogs.length > 0) {
+            setActiveIndex(Math.floor(activeBlogs.length / 2));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch blogs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBlogs();
+  }, []);
+
+  if (loading || blogs.length === 0) return null;
 
   const handleCardClick = (index) => {
     setActiveIndex(index);
   };
 
   return (
-    // Exactly 30px distance from the section above
     <section className="mt-[30px] mb-[35px] bg-background overflow-hidden relative">
       <div className="max-w-[1197px] mx-auto px-6">
-        
         <div className="flex items-center justify-between mb-6 text-white relative z-20">
           <h2 className="text-[25px] font-bold">بلاگ تخصصی</h2>
-          <button className="bg-button text-white px-6 py-2 rounded-xl hover:opacity-90 transition text-sm font-medium shadow-md">
+          <button 
+            onClick={() => navigate('/blog')} 
+            className="bg-button text-white px-6 py-2 rounded-xl hover:opacity-90 transition text-sm font-medium shadow-md"
+          >
             مشاهده همه
           </button>
         </div>
 
-        {/* Moved boxes high up using items-start and reduced container height */}
         <div className="relative h-[360px] flex items-start justify-center perspective-1000 pt-2">
           {blogs.map((blog, index) => {
             let offset = index - activeIndex;
-            if (offset > 2) offset = offset - 5;
-            if (offset < -2) offset = offset + 5;
+            const len = blogs.length;
+            if (offset > Math.floor(len / 2)) offset = offset - len;
+            if (offset < -Math.floor(len / 2)) offset = offset + len;
 
             const isActive = index === activeIndex;
             const distance = Math.abs(offset);
@@ -52,8 +74,11 @@ const BlogSection = () => {
               scale = 0.84; 
             }
 
+            const imageUrl = blog.image_url 
+              ? (blog.image_url.startsWith('http') ? blog.image_url : `http://127.0.0.1:8000${blog.image_url}`)
+              : null;
+
             const style = {
-              // Reduced from 210 to 170 to make the small boxes collide/overlap
               transform: `translateX(${offset * 170}px) scale(${scale}) rotateY(${offset * -15}deg)`,
               zIndex: 10 - distance,
               opacity: 1 - distance * 0.2,
@@ -63,17 +88,21 @@ const BlogSection = () => {
             return (
               <div
                 key={blog.id}
-                onClick={() => handleCardClick(index)}
+                onClick={() => isActive ? navigate(`/blog/${blog.id}`) : handleCardClick(index)}
                 className={`absolute ${width} ${height} rounded-3xl cursor-pointer transition-all duration-500 ease-out shadow-2xl flex flex-col overflow-hidden border-4 border-transparent hover:border-white/20`}
                 style={style}
               >
-                <div className="h-3/5 w-full bg-gradient-to-b from-[#DE9A00] to-[#8B5A00] flex items-center justify-center relative">
-                   <span className="text-white/30 text-5xl font-bold">PRO</span>
+                <div className="h-3/5 w-full bg-gray-800 flex items-center justify-center relative overflow-hidden">
+                   {imageUrl ? (
+                     <img src={imageUrl} alt={blog.title} className="w-full h-full object-cover" />
+                   ) : (
+                     <span className="text-white/30 text-5xl font-bold">VENIX</span>
+                   )}
                 </div>
                 <div className="h-2/5 bg-[#2a2a2a] p-4 flex flex-col justify-between text-white">
                   <div>
-                    <h3 className="text-lg font-bold mb-1 text-primary">{blog.title}</h3>
-                    <p className="text-[10px] text-gray-400 line-clamp-2">{blog.desc}</p>
+                    <h3 className="text-lg font-bold mb-1 text-primary line-clamp-1">{blog.title}</h3>
+                    <p className="text-[10px] text-gray-400 line-clamp-3">{blog.content}</p>
                   </div>
                 </div>
               </div>

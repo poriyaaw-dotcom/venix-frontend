@@ -1,32 +1,55 @@
 // src/components/NewProducts.jsx
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { FiChevronRight, FiChevronLeft } from 'react-icons/fi';
 import ProductCard from './ProductCard';
 
 const NewProducts = () => {
   const sliderRef = useRef(null);
-  
-  // Updated to match the new ProductCard expected structure
-  const products = [
-    { id: 1, title: 'پاد ماد کالیرن جی پرو کوکو یوول', titleEn: 'Caliburn G Pro', price: 5680000, discountPrice: 4680000, discount: 18, image: '/category-img.png', category: 'electronics', brand: 'uvo' },
-    { id: 2, title: 'جویس میوه ای ۶۰ میل', titleEn: 'Fruit Juice 60ml', price: 450000, discountPrice: 380000, discount: 15, image: '/category-img.png', category: 'electronics', brand: 'generic' },
-    { id: 3, title: 'پاد سیستم نویتک مدل نووا', titleEn: 'Novatech Nova', price: 2100000, discountPrice: 1800000, discount: 14, image: '/category-img.png', category: 'electronics', brand: 'novatech' },
-    { id: 4, title: 'باتری ۱۶۵۰ اورجینال سامسونگ', titleEn: 'Samsung 1650 Battery', price: 300000, discountPrice: 250000, discount: 16, image: '/category-img.png', category: 'electronics', brand: 'samsung' },
-    { id: 5, title: 'کویل مش ۰.۵ اهم بسته ۵ عددی', titleEn: '0.5 Ohm Mesh Coil', price: 120000, discountPrice: 90000, discount: 25, image: '/category-img.png', category: 'electronics', brand: 'generic' },
-    { id: 6, title: 'شارژر دیواری فست شارژ', titleEn: 'Fast Charger Adapter', price: 850000, discountPrice: 750000, discount: 12, image: '/category-img.png', category: 'electronics', brand: 'samsung' },
-    { id: 7, title: 'کابل تایپ سی ۱ متری', titleEn: 'Type-C Cable 1m', price: 150000, discountPrice: 120000, discount: 20, image: '/category-img.png', category: 'electronics', brand: 'generic' },
-    { id: 8, title: 'هندزفری بلوتوثی مدل QCY', titleEn: 'QCY Bluetooth Handsfree', price: 980000, discountPrice: 850000, discount: 13, image: '/category-img.png', category: 'electronics', brand: 'qcy' },
-    { id: 9, title: 'اسپیکر قابل حمل مدل X10', titleEn: 'Portable Speaker X10', price: 1200000, discountPrice: 990000, discount: 17, image: '/category-img.png', category: 'electronics', brand: 'generic' },
-    { id: 10, title: 'پاوربانک ۱۰۰۰۰ میلی‌آمپر', titleEn: '10000mAh Power Bank', price: 1500000, discountPrice: 1350000, discount: 10, image: '/category-img.png', category: 'electronics', brand: 'xiaomi' },
-  ];
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNewProducts = async () => {
+      try {
+        // Fetch newest products from backend
+        const res = await fetch('http://127.0.0.1:8000/api/v1/products/search?q=&sort_by=newest');
+        const data = await res.json();
+        
+        // Map backend data to ProductCard expected format and limit to 10
+        const mapped = data.slice(0, 10).map(p => ({
+          id: p.id,
+          title: p.title,
+          titleEn: p.title_en,
+          name: p.title, // Fallback for ProductCard
+          image: p.image_url ? (p.image_url.startsWith('http') ? p.image_url : `http://127.0.0.1:8000${p.image_url}`) : '/category-img.png',
+          variants: p.variants || [] // Keep variants array intact for ProductCard!
+        }));
+        setProducts(mapped);
+      } catch (err) {
+        console.error("Failed to fetch new products:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNewProducts();
+  }, []);
 
   const scroll = (direction) => {
     if (sliderRef.current) {
-      // In RTL, positive scrollLeft moves content to the left (revealing right side)
       sliderRef.current.scrollBy({ left: direction === 'left' ? -220 : 220, behavior: 'smooth' });
     }
   };
+
+  if (loading) {
+    return (
+      <section className="my-[35px] bg-background flex justify-center">
+        <div className="w-full max-w-[1197px] h-[422px] rounded-[30px] p-6 flex items-center justify-center text-white">
+          در حال بارگذاری...
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="my-[35px] bg-background flex justify-center">

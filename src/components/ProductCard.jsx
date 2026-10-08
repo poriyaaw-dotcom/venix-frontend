@@ -37,7 +37,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         />
       </div>
 
-      <div className="w-full h-[2px] bg-button mb-2 opacity-80"></div>
+      <div className="w-full h-[2px] bg-button mb-2 opacity-80 flex-shrink-0"></div>
 
       <div className="flex-grow mb-1">
         <h3 className="text-black text-xs font-bold mb-1 leading-tight line-clamp-2 h-10 px-1">

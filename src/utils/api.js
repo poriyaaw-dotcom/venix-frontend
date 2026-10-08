@@ -42,7 +42,7 @@ export const fetchProducts = async () => {
         discountPrice: price,
         discount: firstVariant.discount_percent || 0,
         oldPrice: firstVariant.base_price || price,
-        image: '/category-img.png',
+        image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://127.0.0.1:8000${product.image_url}`) : '/category-img.png',
         category: product.category?.name || 'دستگاه',
         brand: product.brand?.name || 'generic',
         variants: product.variants || [] // Pass the variants array through!
@@ -74,7 +74,7 @@ export const fetchProductById = async (id) => {
       price: price,
       discountPrice: price,
       discount: 0,
-      image: '/category-img.png',
+      image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://127.0.0.1:8000${product.image_url}`) : '/category-img.png',
       brand: product.brand?.name || 'NO NAME',
       description: product.description || 'توضیحات محصول به زودی اضافه می‌شود.',
       category: product.category?.name || 'دستگاه',

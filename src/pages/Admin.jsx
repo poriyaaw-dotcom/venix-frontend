@@ -27,6 +27,10 @@ const Admin = () => {
   const [bankInfo, setBankInfo] = useState({ bank_name: '', account_holder_name: '', card_number: '', sheba_number: '' });
   const [isEditingBank, setIsEditingBank] = useState(false);
   
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [blogs, setBlogs] = useState([]);
+  const [newBlog, setNewBlog] = useState({ title: '', content: '', image_url: '' });
+  const [editingBlogId, setEditingBlogId] = useState(null);
   const [dashboardStats, setDashboardStats] = useState({ 
     total_users: 0, total_products: 0, pending_requests: 0,
     total_orders: 0, pending_orders: 0, paid_orders: 0,
@@ -100,6 +104,9 @@ const Admin = () => {
         } else if (activeTab === 'reviews') {
           const res = await fetch(`${API_BASE_URL}/reviews/admin/pending`, { headers });
           if (res.ok) setPendingReviews(await res.json());
+        } else if (activeTab === 'blogs') {
+          const res = await fetch(`${API_BASE_URL}/blog/`, { headers });
+          if (res.ok) setBlogs(await res.json());
         }
       } catch (error) { console.error(error); }
     };
@@ -219,6 +226,33 @@ const Admin = () => {
     } catch (error) {
       console.error(error);
       toast.error('خطای شبکه: ' + error.message);
+    }
+  };
+
+  const handleImageUpload = async (file, setUrlFunc) => {
+    if (!file) return;
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/upload/image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUrlFunc(data.url); // Updates the image_url state
+        toast.success('تصویر با موفقیت آپلود شد');
+      } else {
+        toast.error('خطا در آپلود تصویر');
+      }
+    } catch (error) {
+      toast.error('خطای شبکه در آپلود');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -426,6 +460,66 @@ const Admin = () => {
     } catch (error) { toast.error('خطای شبکه'); }
   };
 
+
+  const handleAddBlog = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    try {
+      const url = editingBlogId ? `${API_BASE_URL}/blog/${editingBlogId}` : `${API_BASE_URL}/blog/`;
+      const method = editingBlogId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBlog)
+      });
+      if (res.ok) {
+        toast.success(editingBlogId ? 'بلاگ با موفقیت بروزرسانی شد' : 'بلاگ با موفقیت منتشر شد');
+        setNewBlog({ title: '', content: '', image_url: '' });
+        setEditingBlogId(null);
+        const res2 = await fetch(`${API_BASE_URL}/blog/`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res2.ok) setBlogs(await res2.json());
+      }
+    } catch (error) { toast.error('خطا در ذخیره بلاگ'); }
+  };
+
+  const handleEditBlog = (blog) => {
+    setEditingBlogId(blog.id);
+    setNewBlog({
+      title: blog.title,
+      content: blog.content,
+      image_url: blog.image_url || ''
+    });
+  };
+
+  const handleDeleteBlog = async (blogId) => {
+    if (!window.confirm('آیا از حذف این بلاگ اطمینان دارید؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/blog/${blogId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) {
+        setBlogs(blogs.filter(b => b.id !== blogId));
+        toast.success('بلاگ حذف شد');
+      }
+    } catch (error) { toast.error('خطای شبکه'); }
+  };
+
+  const handleToggleBlogStatus = async (blogId, currentActive) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/blog/${blogId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !currentActive })
+      });
+      if (res.ok) {
+        const res2 = await fetch(`${API_BASE_URL}/blog/`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res2.ok) setBlogs(await res2.json());
+        toast.success('وضعیت بلاگ تغییر کرد');
+      }
+    } catch (error) { toast.error('خطای شبکه'); }
+  };
+
   const handleToggleProductStatus = async (productId, currentActive) => {
     const token = localStorage.getItem('token');
     try {
@@ -465,6 +559,7 @@ const Admin = () => {
     { id: 'customers', label: 'درخواست‌های همکاری', icon: FiUsers },
     { id: 'logs', label: 'گزارشات سیستم', icon: FiFileText },
     { id: 'reviews', label: 'مدیریت نظرات', icon: FiStar },
+    { id: 'blogs', label: 'مدیریت بلاگ', icon: FiFileText },
     { id: 'bank-info', label: 'اطلاعات بانکی', icon: FiCreditCard },
   ];
 
@@ -802,6 +897,67 @@ const Admin = () => {
             </div>
           )}
 
+
+          {activeTab === 'blogs' && (
+            <div>
+              <h1 className="text-2xl font-bold text-white mb-6">مدیریت بلاگ</h1>
+              <form onSubmit={handleAddBlog} className="bg-white/[0.025] border border-white/10 rounded-xl p-6 mb-8 space-y-4">
+                <h3 className="text-lg font-bold text-primary mb-4">{editingBlogId ? 'ویرایش بلاگ' : 'افزودن بلاگ جدید'}</h3>
+                <input 
+                  type="text" 
+                  placeholder="عنوان بلاگ" 
+                  value={newBlog.title} 
+                  onChange={e => setNewBlog({...newBlog, title: e.target.value})} 
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" 
+                  required
+                />
+                <div className="relative">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-black/20 hover:bg-white/5 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                      <p className="text-xs text-gray-400">{newBlog.image_url ? 'تصویر انتخاب شد' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>
+                      {newBlog.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{newBlog.image_url}</p>}
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog({...newBlog, image_url: url})); e.target.value = ''; }} disabled={uploadingImage} />
+                  </label>
+                  {uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}
+                </div>
+                <textarea 
+                  placeholder="متن بلاگ" 
+                  value={newBlog.content} 
+                  onChange={e => setNewBlog({...newBlog, content: e.target.value})} 
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" 
+                  required
+                />
+                <div className="flex gap-3">
+                  <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">{editingBlogId ? 'بروزرسانی' : 'انتشار بلاگ'}</button>
+                  {editingBlogId && (
+                    <button type="button" onClick={() => { setEditingBlogId(null); setNewBlog({ title: '', content: '', image_url: '' }); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button>
+                  )}
+                </div>
+              </form>
+              <div className="space-y-4">
+                {blogs.length === 0 ? <p className="text-gray-500 text-center py-10">بلاگی یافت نشد.</p> : blogs.map(blog => (
+                  <div key={blog.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      {blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `http://127.0.0.1:8000${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}
+                      <div>
+                        <h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3>
+                        <p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs px-3 py-1 rounded-lg ${blog.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{blog.is_active ? 'فعال' : 'غیرفعال'}</span>
+                      <button onClick={() => handleEditBlog(blog)} className="p-2 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition" title="ویرایش"><FiEdit2 /></button>
+                      <button onClick={() => handleToggleBlogStatus(blog.id, blog.is_active)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition" title="تغییر وضعیت"><FiToggleRight size={24} /></button>
+                      <button onClick={() => handleDeleteBlog(blog.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"><FiTrash2 /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {isAddProductOpen && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
               <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
@@ -830,8 +986,15 @@ const Admin = () => {
                         {brands.map(b => <option key={b.id} value={b.id} className="text-black">{b.name}</option>)}
                       </select>
                       <div className="relative">
-                        <FiImage className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                        <input type="text" placeholder="لینک تصویر محصول (URL)" value={productForm.image_url} onChange={e => setProductForm({...productForm, image_url: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl pr-12 pl-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <FiImage className="w-8 h-8 mb-2 text-gray-400" />
+                            <p className="text-xs text-gray-400">{productForm.image_url ? 'تصویر انتخاب شد (برای تغییر کلیک کنید)' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>
+                            {productForm.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{productForm.image_url}</p>}
+                          </div>
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], (url) => setProductForm({...productForm, image_url: url}))} disabled={uploadingImage} />
+                        </label>
+                        {uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}
                       </div>
                       <textarea placeholder="توضیحات" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" />
                     </div>

@@ -13,7 +13,8 @@ const Footer = () => {
             {/* Replaced text with Logo Image */}
             <img src={venixLogo} alt="VENIX" className="h-12 w-auto object-contain mb-6" />
             <p className="text-gray/60 text-sm leading-relaxed">
-              فروشگاه معتبر برای دوستداران ویپینگ! ارائه بهترین محصولات با ضمانت اصالت کالا و پشتیبانی ۲۴ ساعته.
+              فروشگاه VENIX ارائه‌دهنده محصولات اصل و باکیفیت ویپ، پاد و جویس با ضمانت اصالت کالا است. 
+              ما با پشتیبانی پاسخ‌گو و قیمت مناسب، تجربه‌ای مطمئن و رضایت‌بخش را برای دوستداران ویپینگ فراهم می‌کنیم.
             </p>
           </div>
           <div>

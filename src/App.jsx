@@ -23,7 +23,9 @@ import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
 import Admin from './pages/Admin';
-import CardToCardPayment from './pages/CardToCardPayment'; 
+import CardToCardPayment from './pages/CardToCardPayment';
+import Blog from './pages/Blog';
+import BlogDetail from './pages/BlogDetail'; 
 
 function App() {
   return (
@@ -65,6 +67,8 @@ function App() {
           <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/card-to-card" element={<CardToCardPayment />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/admin" element={<Admin />} /> 
         </Routes>
       </Router>
