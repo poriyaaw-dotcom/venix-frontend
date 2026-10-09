@@ -54,13 +54,23 @@ const Cart = () => {
               const hasDiscount = item.discount > 0;
               const finalPrice = hasDiscount ? item.discountPrice : item.price;
               
+              // Debug: Check what the cart item actually contains
+              console.log("Cart Item Data:", item);
+              
               return (
                 <div key={itemId} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
                   <Link to={`/product/${item.product_id || item.id}`} className="w-full sm:w-28 h-28 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
                     <img 
-  src={item.image ? (item.image.startsWith('http') ? item.image : `http://127.0.0.1:8000${item.image}`) : '/category-img.png'} 
+  src={
+    (item.image || item.image_url) 
+      ? ((item.image || item.image_url).startsWith('http') 
+        ? (item.image || item.image_url) 
+        : `http://127.0.0.1:8000${item.image || item.image_url}`) 
+      : '/category-img.png'
+  } 
   alt={item.title} 
   className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" 
+  onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }}
 />
                   </Link>
 

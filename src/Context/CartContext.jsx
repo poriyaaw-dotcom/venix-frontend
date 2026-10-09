@@ -39,10 +39,13 @@ export const CartProvider = ({ children }) => {
       return [...prev, { 
         variant_id: variantId, 
         quantity, 
-        // Keep minimal product info for UI display only. 
-        // Backend will recalculate authoritative price at checkout.
-        title: productInfo?.title || 'محصول', 
-        price: productInfo?.price || 0 
+        title: productInfo?.title || 'محصول',
+        titleEn: productInfo?.titleEn || '',
+        price: productInfo?.price || 0,
+        discountPrice: productInfo?.discountPrice || 0,
+        discount: productInfo?.discount || 0,
+        image: productInfo?.image || productInfo?.image_url || '',
+        product_id: productInfo?.product_id || productInfo?.id || variantId
       }];
     });
   };

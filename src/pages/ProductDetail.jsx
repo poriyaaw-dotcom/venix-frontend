@@ -188,7 +188,15 @@ const ProductDetail = () => {
                 const targetVariantId = product.variants && product.variants.length > 0 
                   ? product.variants[0].id 
                   : product.id;
-                addToCart(targetVariantId, quantity, { title: product.title, price: product.price });
+                addToCart(targetVariantId, quantity, { 
+                  title: product.title, 
+                  titleEn: product.titleEn || '', 
+                  price: product.price, 
+                  discount: product.discount || 0, 
+                  discountPrice: product.discountPrice || 0, 
+                  image: product.image || product.image_url || '', 
+                  product_id: product.id 
+                });
               }} className="w-full mt-5 bg-button hover:bg-button/90 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2">
                 <FiShoppingCart className="w-5 h-5" /> افزودن به سبد خرید
               </button>
