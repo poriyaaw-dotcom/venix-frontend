@@ -11,34 +11,60 @@ import SortDropdown from '../components/shop/SortDropdown';
 import { fetchProducts, toFarsiNumber } from '../utils/api';
 
 const Shop = () => {
-  const [filters, setFilters] = useState({ categories: [], brands: [], priceRange: [0, 100000000] });
+  // 1. Get URL parameters
+  const [searchParams] = useSearchParams();
+  const urlSearchQuery = searchParams.get('q') || '';
+  const urlCategory = searchParams.get('category') || '';
+  const urlBrand = searchParams.get('brand') || '';
+
+  // 2. Initialize state
+  const [filters, setFilters] = useState({ 
+    categories: urlCategory ? [urlCategory] : [], 
+    brands: urlBrand ? [urlBrand] : [], 
+    priceRange: [0, 100000000] 
+  });
   const [sort, setSort] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [searchParams] = useSearchParams();
-  const urlSearchQuery = searchParams.get('q') || '';
   
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 12;
 
+  // 3. 🚨 CRITICAL FIX: Sync filters with URL changes in real-time!
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      categories: urlCategory ? [urlCategory] : [],
+      brands: urlBrand ? [urlBrand] : []
+    }));
+    setCurrentPage(1); // Reset to page 1 when filter changes
+  }, [urlCategory, urlBrand]);
+
+  // 4. Load products on mount
   useEffect(() => {
     const loadProducts = async () => {
       setIsLoading(true);
       const data = await fetchProducts();
+      console.log("🔥 PRODUCTS LOADED. First product category:", data[0]?.category);
+      console.log("🔥 CURRENT URL CATEGORY:", urlCategory);
       setAllProducts(data);
       setIsLoading(false);
     };
     loadProducts();
   }, []);
 
+  // 5. Filter logic
   const filteredProducts = allProducts.filter((product) => {
-    const categoryMatch = filters.categories.length === 0 || filters.categories.includes(product.category);
-    const brandMatch = filters.brands.length === 0 || filters.brands.includes(product.brand);
+    const prodCategory = product.category || product.category_name || 'دستگاه';
+    const prodBrand = product.brand || product.brand_name || 'generic';
+
+    const categoryMatch = filters.categories.length === 0 || filters.categories.includes(prodCategory);
+    const brandMatch = filters.brands.length === 0 || filters.brands.includes(prodBrand);
+    
     const finalPrice = product.discountPrice || product.price;
     const priceMatch = finalPrice >= filters.priceRange[0] && finalPrice <= filters.priceRange[1];
     
-    // Search match (checks both Persian and English titles)
     const searchLower = urlSearchQuery.toLowerCase();
     const searchMatch = searchLower === '' || 
       (product.title && product.title.toLowerCase().includes(searchLower)) || 
@@ -47,6 +73,7 @@ const Shop = () => {
     return categoryMatch && brandMatch && priceMatch && searchMatch;
   });
 
+  // 6. Sort logic
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const priceA = a.discountPrice || a.price;
     const priceB = b.discountPrice || b.price;
@@ -59,9 +86,6 @@ const Shop = () => {
   const safeCurrentPage = currentPage > totalPages ? 1 : currentPage;
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const currentProducts = sortedProducts.slice(startIndex, startIndex + itemsPerPage);
-  
-  // DEBUG: Let's see the raw data reaching the Shop page
-  console.log("Shop.jsx Raw Data:", currentProducts.length > 0 ? currentProducts[0] : "No products");
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -71,7 +95,10 @@ const Shop = () => {
     }, 50);
   };
 
-  const handleFilterChange = (newFilters) => { setFilters(newFilters); setCurrentPage(1); };
+  const handleFilterChange = (newFilters) => { 
+    setFilters(newFilters); 
+    setCurrentPage(1); 
+  };
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200">
@@ -152,4 +179,5 @@ const Shop = () => {
     </div>
   );
 };
+
 export default Shop;

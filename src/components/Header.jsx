@@ -59,7 +59,7 @@ const Header = () => {
                 {categories.map((cat) => (
                   <Link 
                     key={cat.id} 
-                    to={`/shop?category=${cat.slug}`}
+                    to={`/shop?category=${encodeURIComponent(cat.name)}`}
                     className="block w-full text-right px-4 py-2 hover:bg-primary/10 transition text-gray-400 hover:text-primary text-sm"
                     onClick={() => setShowCategories(false)}
                   >

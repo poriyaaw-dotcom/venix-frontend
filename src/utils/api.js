@@ -43,8 +43,8 @@ export const fetchProducts = async () => {
         discount: firstVariant.discount_percent || 0,
         oldPrice: firstVariant.base_price || price,
         image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://127.0.0.1:8000${product.image_url}`) : '/category-img.png',
-        category: product.category?.name || 'دستگاه',
-        brand: product.brand?.name || 'generic',
+        category: product.category_name || 'دستگاه',
+        brand: product.brand_name || 'generic',
         variants: product.variants || [] // Pass the variants array through!
       };
     });
@@ -75,9 +75,9 @@ export const fetchProductById = async (id) => {
       discountPrice: price,
       discount: 0,
       image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://127.0.0.1:8000${product.image_url}`) : '/category-img.png',
-      brand: product.brand?.name || 'NO NAME',
+      brand: product.brand_name || 'NO NAME',
       description: product.description || 'توضیحات محصول به زودی اضافه می‌شود.',
-      category: product.category?.name || 'دستگاه',
+      category: product.category_name || 'دستگاه',
       variants: product.variants || []
     };
   } catch (error) {
