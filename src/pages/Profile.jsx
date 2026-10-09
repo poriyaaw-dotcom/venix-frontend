@@ -17,7 +17,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('info');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [newAddress, setNewAddress] = useState({ city: '', street: '', postal_code: '', phone: '' });
+  const [newAddress, setNewAddress] = useState({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -116,18 +116,54 @@ const Profile = () => {
     }
   };
 
-  const handleAddAddress = () => {
-    if (!newAddress.city || !newAddress.street) return toast.error('لطفا شهر و آدرس را وارد کنید');
-    const updatedAddresses = [...addresses, { ...newAddress, id: Date.now() }];
-    setAddresses(updatedAddresses);
-    saveToStorage(userData.fullName, updatedAddresses, userData.businessName);
-    setNewAddress({ city: '', street: '', postal_code: '', phone: '' });
+  const handleAddAddress = async () => {
+    if (!newAddress.province || !newAddress.city || !newAddress.full_address) return toast.error('لطفا استان، شهر و آدرس را وارد کنید');
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/me/addresses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newAddress)
+      });
+      
+      if (res.ok) {
+        const savedAddr = await res.json();
+        const updatedAddresses = [...addresses, savedAddr];
+        setAddresses(updatedAddresses);
+        localStorage.setItem('venix_current_user_addresses', JSON.stringify(updatedAddresses));
+        toast.success('آدرس با موفقیت در سرور ذخیره شد');
+        setNewAddress({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
+      } else {
+        throw new Error('Backend failed');
+      }
+    } catch (error) {
+      // Fallback to localStorage if backend endpoint doesn't exist yet
+      const updatedAddresses = [...addresses, { ...newAddress, id: Date.now() }];
+      setAddresses(updatedAddresses);
+      localStorage.setItem('venix_current_user_addresses', JSON.stringify(updatedAddresses));
+      toast.success('آدرس به صورت محلی ذخیره شد');
+      setNewAddress({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
+    }
   };
 
-  const handleDeleteAddress = (id) => {
+  const handleDeleteAddress = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      await fetch(`http://127.0.0.1:8000/api/v1/auth/me/addresses/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (error) {
+      // Ignore backend errors for fallback
+    }
     const updatedAddresses = addresses.filter(addr => addr.id !== id);
     setAddresses(updatedAddresses);
-    saveToStorage(userData.fullName, updatedAddresses, userData.businessName);
+    localStorage.setItem('venix_current_user_addresses', JSON.stringify(updatedAddresses));
+    toast.success('آدرس حذف شد');
   };
 
   const handleLogout = () => {
@@ -244,7 +280,7 @@ const Profile = () => {
                   <div className="space-y-3">
                     {addresses.length === 0 ? <p className="text-gray-500 text-center py-4">آدرسی ثبت نشده است.</p> : addresses.map(addr => (
                       <div key={addr.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex justify-between items-start">
-                        <div><h4 className="font-bold text-white mb-1">{addr.city}</h4><p className="text-sm text-gray-400">{addr.street} | کد پستی: {addr.postal_code}</p></div>
+                        <div><h4 className="font-bold text-white mb-1">{addr.province}، {addr.city}</h4><p className="text-sm text-gray-400">{addr.full_address} | کد پستی: {addr.postal_code}</p></div>
                         <button onClick={() => handleDeleteAddress(addr.id)} className="text-red-400 hover:bg-red-500/10 p-2 rounded-lg"><FiTrash2 /></button>
                       </div>
                     ))}
@@ -252,10 +288,14 @@ const Profile = () => {
                   <div className="bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
                     <h4 className="font-bold text-primary text-sm flex items-center gap-2"><FiPlus /> افزودن آدرس جدید</h4>
                     <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="استان" value={newAddress.province} onChange={e => setNewAddress({...newAddress, province: e.target.value})} className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" />
                       <input type="text" placeholder="شهر" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" />
-                      <input type="text" placeholder="کد پستی" value={newAddress.postal_code} onChange={e => setNewAddress({...newAddress, postal_code: e.target.value})} className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" />
                     </div>
-                    <textarea placeholder="آدرس کامل" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none h-20" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="کد پستی" value={newAddress.postal_code} onChange={e => setNewAddress({...newAddress, postal_code: e.target.value})} className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" />
+                      <input type="text" placeholder="شماره تماس (اختیاری)" value={newAddress.phone} onChange={e => setNewAddress({...newAddress, phone: e.target.value})} className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" />
+                    </div>
+                    <textarea placeholder="آدرس کامل" value={newAddress.full_address} onChange={e => setNewAddress({...newAddress, full_address: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none h-20" />
                     <button onClick={handleAddAddress} className="w-full bg-button hover:bg-button/90 text-white font-bold py-2 rounded-lg transition text-sm">ثبت آدرس</button>
                   </div>
                 </div>

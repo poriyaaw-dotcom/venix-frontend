@@ -164,7 +164,7 @@ const CardToCardPayment = () => {
                 type="text" 
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="مثال: 1234567890"
+                placeholder="1234567890"
                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-4 text-white text-center text-lg tracking-widest outline-none focus:border-primary transition font-mono"
                 dir="ltr"
                 required

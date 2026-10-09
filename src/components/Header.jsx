@@ -13,6 +13,7 @@ const Header = () => {
   // Dynamic categories state fetched from backend
   const [categories, setCategories] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/v1/products/categories')
@@ -72,10 +73,16 @@ const Header = () => {
 
         {/* Middle: Search Bar */}
         <div className="flex justify-center w-full">
-          <div className="relative w-[612px]">
-            <input type="text" placeholder="جستجو در محصولات..." className="w-full h-[39px] px-5 rounded-full bg-gray text-background placeholder-background/60 focus:outline-none focus:ring-2 focus:ring-primary transition text-sm" />
-            <button className="absolute left-4 top-1/2 -translate-y-1/2 text-background/70 hover:text-background transition"><FiSearch className="text-lg" /></button>
-          </div>
+          <form onSubmit={(e) => { e.preventDefault(); if (searchQuery.trim()) navigate(`/shop?q=${encodeURIComponent(searchQuery)}`); }} className="relative w-[612px]">
+            <input 
+              type="text" 
+              placeholder="جستجو در محصولات..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-[39px] px-5 rounded-full bg-gray text-background placeholder-background/60 focus:outline-none focus:ring-2 focus:ring-primary transition text-sm" 
+            />
+            <button type="submit" className="absolute left-4 top-1/2 -translate-y-1/2 text-background/70 hover:text-background transition"><FiSearch className="text-lg" /></button>
+          </form>
         </div>
 
         {/* Left Side: Icons */}

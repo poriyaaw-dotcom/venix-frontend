@@ -46,7 +46,7 @@ const Cart = () => {
       <main className="max-w-[1240px] mx-auto px-4 py-8">
         <h1 className="text-3xl font-black text-white mb-8">سبد خرید شما</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+        <div className="grid grid-cols-1 gap-8">
           <div className="space-y-4">
             {cartItems.map((item) => {
               // ✅ FIX: Safely get the unique identifier (variant_id or id)
@@ -57,7 +57,11 @@ const Cart = () => {
               return (
                 <div key={itemId} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
                   <Link to={`/product/${item.product_id || item.id}`} className="w-full sm:w-28 h-28 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
-                    <img src={item.image} alt={item.title} className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" />
+                    <img 
+  src={item.image ? (item.image.startsWith('http') ? item.image : `http://127.0.0.1:8000${item.image}`) : '/category-img.png'} 
+  alt={item.title} 
+  className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" 
+/>
                   </Link>
 
                   <div className="flex-1 w-full text-center sm:text-right">
@@ -95,49 +99,10 @@ const Cart = () => {
             })}
           </div>
 
-          <div className="lg:sticky lg:top-24 h-fit">
-            <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-6">
-              <h2 className="text-lg font-bold text-white mb-6 pb-4 border-b border-white/10">خلاصه سفارش</h2>
-              
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">مجموع کالاها</span>
-                  <span className="text-white font-bold">{formatPrice(cartTotal)} تومان</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">هزینه ارسال</span>
-                  <span className="text-green-400 font-bold flex items-center gap-1">
-                    <FiCheck className="w-3 h-3" /> رایگان
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">تخفیف</span>
-                  <span className="text-red-400 font-bold">۰ تومان</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center pt-6 border-t border-white/10 mb-6">
-                <span className="text-base font-bold text-white">مبلغ قابل پرداخت</span>
-                <div className="text-2xl font-black text-primary">
-                  {formatPrice(cartTotal)} <span className="text-xs font-normal text-gray-400">تومان</span>
-                </div>
-              </div>
-
-              <Link to="/checkout" className="block w-full bg-button hover:bg-button/90 text-white py-4 rounded-xl font-bold text-center transition shadow-lg shadow-button/20">
-                ادامه فرآیند خرید
-              </Link>
-
-              <div className="grid grid-cols-2 gap-3 mt-6">
-                <div className="bg-white/[0.025] border border-white/10 rounded-xl p-3 text-center">
-                  <FiTruck className="mx-auto mb-1 text-primary w-5 h-5" />
-                  <span className="text-[10px] text-gray-400">ارسال سریع</span>
-                </div>
-                <div className="bg-white/[0.025] border border-white/10 rounded-xl p-3 text-center">
-                  <FiShield className="mx-auto mb-1 text-primary w-5 h-5" />
-                  <span className="text-[10px] text-gray-400">ضمانت اصالت</span>
-                </div>
-              </div>
-            </div>
+          <div className="flex justify-center mt-8">
+            <Link to="/checkout" className="block w-full max-w-md bg-button hover:bg-button/90 text-white py-4 rounded-xl font-bold text-center transition shadow-lg shadow-button/20 text-lg">
+              ادامه فرآیند خرید ({formatPrice(cartTotal)} تومان)
+            </Link>
           </div>
         </div>
       </main>

@@ -1,5 +1,6 @@
 // src/pages/Shop.jsx
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight, FiSliders, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -14,6 +15,8 @@ const Shop = () => {
   const [sort, setSort] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const urlSearchQuery = searchParams.get('q') || '';
   
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +37,14 @@ const Shop = () => {
     const brandMatch = filters.brands.length === 0 || filters.brands.includes(product.brand);
     const finalPrice = product.discountPrice || product.price;
     const priceMatch = finalPrice >= filters.priceRange[0] && finalPrice <= filters.priceRange[1];
-    return categoryMatch && brandMatch && priceMatch;
+    
+    // Search match (checks both Persian and English titles)
+    const searchLower = urlSearchQuery.toLowerCase();
+    const searchMatch = searchLower === '' || 
+      (product.title && product.title.toLowerCase().includes(searchLower)) || 
+      (product.titleEn && product.titleEn.toLowerCase().includes(searchLower));
+
+    return categoryMatch && brandMatch && priceMatch && searchMatch;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {

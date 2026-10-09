@@ -1,72 +1,60 @@
 // src/components/shop/ShopSidebar.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiChevronDown, FiChevronUp, FiX } from 'react-icons/fi';
 
-const CATEGORIES = [
-  { id: 'electronics', label: 'الکترونیک', count: 42 },
-  { id: 'fashion', label: 'مد و پوشاک', count: 28 },
-  { id: 'home', label: 'خانه و آشپزخانه', count: 19 },
-  { id: 'beauty', label: 'زیبایی و بهداشت', count: 35 },
-  { id: 'sports', label: 'ورزش و سفر', count: 14 },
-];
-
-const BRANDS = [
-  { id: 'samsung', label: 'سامسونگ', count: 18 },
-  { id: 'apple', label: 'اپل', count: 12 },
-  { id: 'xiaomi', label: 'شیائومی', count: 22 },
-  { id: 'lg', label: 'ال جی', count: 9 },
-  { id: 'sony', label: 'سونی', count: 15 },
-];
-
-const PRICE_STEPS = [
-  { label: 'همه قیمت‌ها', value: [0, 10000000] },
-  { label: 'زیر ۵۰۰ هزار تومان', value: [0, 500000] },
-  { label: '۵۰۰ هزار تا ۲ میلیون', value: [500000, 2000000] },
-  { label: '۲ میلیون تا ۵ میلیون', value: [2000000, 5000000] },
-  { label: 'بالاتر از ۵ میلیون', value: [5000000, 10000000] },
-];
-
 const ShopSidebar = ({ filters, setFilters }) => {
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
   const [openSections, setOpenSections] = useState({
     categories: true,
-    price: true,
     brands: true,
   });
+
+  useEffect(() => {
+    // Fetch Categories dynamically
+    fetch('http://127.0.0.1:8000/api/v1/products/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCategories(data);
+      })
+      .catch(err => console.error("Failed to load categories:", err));
+
+    // Fetch Brands dynamically
+    fetch('http://127.0.0.1:8000/api/v1/products/brands')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setBrands(data);
+      })
+      .catch(err => console.error("Failed to load brands:", err));
+  }, []);
 
   const toggleSection = (key) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const toggleCategory = (id) => {
+  const toggleCategory = (name) => {
     setFilters((prev) => ({
       ...prev,
-      categories: prev.categories.includes(id)
-        ? prev.categories.filter((c) => c !== id)
-        : [...prev.categories, id],
+      categories: prev.categories.includes(name)
+        ? prev.categories.filter((c) => c !== name)
+        : [...prev.categories, name],
     }));
   };
 
-  const toggleBrand = (id) => {
+  const toggleBrand = (name) => {
     setFilters((prev) => ({
       ...prev,
-      brands: prev.brands.includes(id)
-        ? prev.brands.filter((b) => b !== id)
-        : [...prev.brands, id],
+      brands: prev.brands.includes(name)
+        ? prev.brands.filter((b) => b !== name)
+        : [...prev.brands, name],
     }));
-  };
-
-  const setPriceRange = (range) => {
-    setFilters((prev) => ({ ...prev, priceRange: range }));
   };
 
   const clearAll = () =>
-    setFilters({ categories: [], brands: [], priceRange: [0, 10000000] });
+    setFilters({ categories: [], brands: [] });
 
   const hasActiveFilters =
-    filters.categories.length > 0 ||
-    filters.brands.length > 0 ||
-    filters.priceRange[0] !== 0 ||
-    filters.priceRange[1] !== 10000000;
+    filters.categories.length > 0 || filters.brands.length > 0;
 
   return (
     <div className="bg-[#FDF8E8]/40 rounded-[30px] p-5 sticky top-[90px]">
@@ -91,50 +79,26 @@ const ShopSidebar = ({ filters, setFilters }) => {
         onToggle={() => toggleSection('categories')}
       >
         <ul className="space-y-3">
-          {CATEGORIES.map((cat) => (
-            <li key={cat.id}>
-              <label className="flex items-center justify-between cursor-pointer group">
-                <span className="flex items-center gap-2">
-                  <CustomCheckbox
-                    checked={filters.categories.includes(cat.id)}
-                    onChange={() => toggleCategory(cat.id)}
-                  />
-                  <span className="text-[12px] text-gray group-hover:text-primary transition-colors">
-                    {cat.label}
+          {categories.length === 0 ? (
+            <li className="text-[12px] text-gray/50">دسته‌بندی یافت نشد</li>
+          ) : (
+            categories.map((cat) => (
+              <li key={cat.id}>
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <span className="flex items-center gap-2">
+                    <CustomCheckbox
+                      checked={filters.categories.includes(cat.name)}
+                      onChange={() => toggleCategory(cat.name)}
+                    />
+                    <span className="text-[12px] text-gray group-hover:text-primary transition-colors">
+                      {cat.name}
+                    </span>
                   </span>
-                </span>
-                <span className="text-[10px] text-gray/50">({cat.count})</span>
-              </label>
-            </li>
-          ))}
+                </label>
+              </li>
+            ))
+          )}
         </ul>
-      </FilterSection>
-
-      {/* Price Range */}
-      <FilterSection
-        title="محدوده قیمت"
-        isOpen={openSections.price}
-        onToggle={() => toggleSection('price')}
-      >
-        <div className="space-y-2">
-          {PRICE_STEPS.map((step, idx) => (
-            <label
-              key={idx}
-              className="flex items-center gap-2 cursor-pointer group"
-            >
-              <CustomRadio
-                checked={
-                  filters.priceRange[0] === step.value[0] &&
-                  filters.priceRange[1] === step.value[1]
-                }
-                onChange={() => setPriceRange(step.value)}
-              />
-              <span className="text-[12px] text-gray group-hover:text-primary transition-colors">
-                {step.label}
-              </span>
-            </label>
-          ))}
-        </div>
       </FilterSection>
 
       {/* Brands */}
@@ -144,24 +108,25 @@ const ShopSidebar = ({ filters, setFilters }) => {
         onToggle={() => toggleSection('brands')}
       >
         <ul className="space-y-3">
-          {BRANDS.map((brand) => (
-            <li key={brand.id}>
-              <label className="flex items-center justify-between cursor-pointer group">
-                <span className="flex items-center gap-2">
-                  <CustomCheckbox
-                    checked={filters.brands.includes(brand.id)}
-                    onChange={() => toggleBrand(brand.id)}
-                  />
-                  <span className="text-[12px] text-gray group-hover:text-primary transition-colors">
-                    {brand.label}
+          {brands.length === 0 ? (
+            <li className="text-[12px] text-gray/50">برندی یافت نشد</li>
+          ) : (
+            brands.map((brand) => (
+              <li key={brand.id}>
+                <label className="flex items-center justify-between cursor-pointer group">
+                  <span className="flex items-center gap-2">
+                    <CustomCheckbox
+                      checked={filters.brands.includes(brand.name)}
+                      onChange={() => toggleBrand(brand.name)}
+                    />
+                    <span className="text-[12px] text-gray group-hover:text-primary transition-colors">
+                      {brand.name}
+                    </span>
                   </span>
-                </span>
-                <span className="text-[10px] text-gray/50">
-                  ({brand.count})
-                </span>
-              </label>
-            </li>
-          ))}
+                </label>
+              </li>
+            ))
+          )}
         </ul>
       </FilterSection>
 
@@ -195,7 +160,7 @@ const FilterSection = ({ title, isOpen, onToggle, children }) => (
 const CustomCheckbox = ({ checked, onChange }) => (
   <span
     onClick={onChange}
-    className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-all ${
+    className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-all cursor-pointer ${
       checked
         ? 'bg-primary border-primary'
         : 'border-gray/40 hover:border-primary'
@@ -212,19 +177,6 @@ const CustomCheckbox = ({ checked, onChange }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
       </svg>
     )}
-  </span>
-);
-
-const CustomRadio = ({ checked, onChange }) => (
-  <span
-    onClick={onChange}
-    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-      checked
-        ? 'border-primary'
-        : 'border-gray/40 hover:border-primary'
-    }`}
-  >
-    {checked && <span className="w-2 h-2 rounded-full bg-primary" />}
   </span>
 );
 
