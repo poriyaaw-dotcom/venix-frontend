@@ -15,23 +15,23 @@ const QASection = () => {
   return (
     // Exact size 1440x607
     <section className="my-[35px] w-full flex justify-center">
-      <div className="w-full max-w-[1440px] h-[607px] bg-[#1a2236] rounded-[30px] flex items-center justify-center relative overflow-hidden">
+      <div className="w-full max-w-[1440px] h-auto md:h-[607px] py-10 px-4 md:px-0 bg-[#1a2236] rounded-[30px] flex items-center justify-center relative overflow-hidden">
         
         {/* Decorative Background Elements */}
         <div className="absolute text-[250px] text-white/[0.03] font-black select-none pointer-events-none" style={{ top: '-5%', right: '10%' }}>?</div>
         <div className="absolute text-[200px] text-white/[0.03] font-black select-none pointer-events-none" style={{ bottom: '-5%', left: '10%' }}>?</div>
 
         {/* Constrained to 1197px for perfect alignment */}
-        <div className="max-w-[1197px] w-full mx-auto px-6 flex gap-8 z-10">
+        <div className="max-w-[1197px] w-full mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6 md:gap-8 z-10">
           
           {/* Right Side: Questions (476px wide) */}
-          <div className="w-[476px] flex flex-col gap-3">
+          <div className="w-full md:w-[476px] flex flex-col gap-3">
             {questions.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => setActiveIndex(index)}
                 // Exact size 476x55
-                className={`w-[476px] h-[55px] rounded-xl flex items-center justify-between px-6 transition-all duration-300 ${
+                className={`w-full md:w-[476px] md:h-[55px] h-auto min-h-[50px] py-3 rounded-xl flex items-center justify-between px-6 transition-all duration-300 ${
                   activeIndex === index
                     ? 'bg-[#2a3b5c] text-white shadow-lg border border-white/10'
                     : 'bg-[#232d45] text-gray-400 hover:bg-[#2a3b5c]/50 border border-transparent'
@@ -45,7 +45,7 @@ const QASection = () => {
 
           {/* Left Side: Answer Box (Matches height of 6 questions + gaps) */}
           {/* 6 * 55px + 5 * 12px gap = 390px */}
-          <div className="flex-1 h-[390px] bg-[#232d45] rounded-3xl p-8 flex flex-col justify-center items-center text-center border border-white/5 shadow-2xl">
+          <div className="flex-1 h-auto min-h-[200px] md:h-[390px] bg-[#232d45] rounded-3xl p-8 flex flex-col justify-center items-center text-center border border-white/5 shadow-2xl">
             <h3 className="text-xl font-bold text-primary mb-4">
               {questions[activeIndex].q}
             </h3>

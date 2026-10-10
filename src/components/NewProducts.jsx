@@ -44,7 +44,7 @@ const NewProducts = () => {
   if (loading) {
     return (
       <section className="my-[35px] bg-background flex justify-center">
-        <div className="w-full max-w-[1197px] h-[422px] rounded-[30px] p-6 flex items-center justify-center text-white">
+        <div className="w-full max-w-[1197px] h-auto md:h-[422px] md:py-6 rounded-[30px] p-6 flex items-center justify-center text-white">
           در حال بارگذاری...
         </div>
       </section>
@@ -53,7 +53,7 @@ const NewProducts = () => {
 
   return (
     <section className="my-[35px] bg-background flex justify-center">
-      <div className="w-full max-w-[1197px] h-[422px] rounded-[30px] p-6 shadow-[0_20px_50px_-12px_rgba(222,154,0,0.3)] relative overflow-hidden bg-[linear-gradient(135deg,#C59338_0%,#DE9A00_50%,#F4B942_100%)] flex flex-col">
+      <div className="w-full max-w-[1197px] h-auto md:h-[422px] md:py-6 rounded-[30px] p-6 shadow-[0_20px_50px_-12px_rgba(222,154,0,0.3)] relative overflow-hidden bg-[linear-gradient(135deg,#C59338_0%,#DE9A00_50%,#F4B942_100%)] flex flex-col">
         <div className="flex items-center justify-between mb-4 text-white">
           <h2 className="text-[25px] font-bold drop-shadow-md">محصولات جدید</h2>
           <div className="flex gap-2">

@@ -2,7 +2,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-body { @apply bg-background text-gray font-sans; }
+html, body { @apply bg-background text-gray font-sans overflow-x-hidden; }
 /* Add at the bottom of src/index.css */
 
 @keyframes fadeIn {

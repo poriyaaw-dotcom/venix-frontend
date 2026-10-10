@@ -1208,7 +1208,22 @@ const Admin = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-400 mb-2">اقلام سفارش</p>
-                    <p className="text-white text-sm">{selectedOrder.total_items} قلم کالا - مجموع: {parseFloat(selectedOrder.total_price).toLocaleString()} تومان</p>
+                    <div className="space-y-2">
+                      {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                        selectedOrder.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between items-center text-sm bg-white/5 p-2 rounded-lg">
+                            <span className="text-gray-300">{item.product_title} <span className="text-gray-500 text-xs">(x{item.quantity})</span></span>
+                            <span className="text-primary font-bold">{new Intl.NumberFormat('fa-IR').format(item.unit_price * item.quantity)} تومان</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">جزئیات اقلام در دسترس نیست.</p>
+                      )}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
+                      <span className="text-white font-bold">مجموع کل:</span>
+                      <span className="text-primary font-black text-lg">{parseFloat(selectedOrder.total_price).toLocaleString()} تومان</span>
+                    </div>
                   </div>
                   
                   {/* ✅ UPDATED: Clean Dropdown without "تکمیل شده" or parentheses */}

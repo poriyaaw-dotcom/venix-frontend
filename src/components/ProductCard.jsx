@@ -21,7 +21,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   });
 
   return (
-    <Link to={`/product/${product.id}`} className="block w-[201px] h-[272px] bg-[#FDF8E8]/40 backdrop-blur-sm rounded-[20px] p-3 relative flex flex-col shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] transition-all duration-300 border border-white/40 overflow-hidden flex-shrink-0 group">
+    <Link to={`/product/${product.id}`} className="block w-full md:w-[201px] h-auto md:h-[272px] bg-[#FDF8E8]/40 backdrop-blur-sm rounded-[20px] p-3 relative flex flex-col shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_35px_-5px_rgba(0,0,0,0.15)] transition-all duration-300 border border-white/40 overflow-hidden flex-shrink-0 group">
       
       {hasDiscount && (
         <div className="absolute top-0 right-0 bg-button text-white px-3 py-1.5 rounded-bl-xl font-bold text-xs shadow-md z-20">

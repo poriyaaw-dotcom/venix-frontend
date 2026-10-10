@@ -51,7 +51,7 @@ const ShopSidebar = ({ filters, setFilters }) => {
   };
 
   const clearAll = () =>
-    setFilters({ categories: [], brands: [] });
+    setFilters({ categories: [], brands: [], priceRange: [0, 100000000] });
 
   const hasActiveFilters =
     filters.categories.length > 0 || filters.brands.length > 0;

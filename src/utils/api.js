@@ -30,7 +30,20 @@ export const fetchProducts = async () => {
     const productsArray = Array.isArray(data) ? data : (data.items || []);
 
     return productsArray.map(product => {
-      const firstVariant = product.variants?.[0] || {};
+          // Extract unique attributes from all variants
+    const attrMap = {};
+    (product.variants || []).forEach(v => {
+      (v.attributes || []).forEach(a => {
+        if (!attrMap[a.name]) attrMap[a.name] = new Set();
+        attrMap[a.name].add(a.value);
+      });
+    });
+    const formattedAttributes = Object.entries(attrMap).map(([name, values]) => ({
+      name,
+      values: Array.from(values).map(v => ({ value: v }))
+    }));
+
+    const firstVariant = product.variants?.[0] || {};
       // ✅ FIX: Changed purchase_cost to final_price
       const price = firstVariant.final_price || 0; 
       
@@ -62,9 +75,21 @@ export const fetchProductById = async (id) => {
     const response = await fetch(`${API_BASE_URL}/products/${id}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch product');
     const product = await response.json();
-    
+
+    // Extract unique attributes from all variants
+    const attrMap = {};
+    (product.variants || []).forEach(v => {
+      (v.attributes || []).forEach(a => {
+        if (!attrMap[a.name]) attrMap[a.name] = new Set();
+        attrMap[a.name].add(a.value);
+      });
+    });
+    const formattedAttributes = Object.entries(attrMap).map(([name, values]) => ({
+      name,
+      values: Array.from(values).map(v => ({ value: v }))
+    }));
+
     const firstVariant = product.variants?.[0] || {};
-    // ✅ FIX: Changed purchase_cost to final_price
     const price = firstVariant.final_price || 0;
 
     return {
@@ -78,6 +103,9 @@ export const fetchProductById = async (id) => {
       brand: product.brand_name || 'NO NAME',
       description: product.description || 'توضیحات محصول به زودی اضافه می‌شود.',
       category: product.category_name || 'دستگاه',
+      attributes: formattedAttributes,
+      average_rating: product.average_rating || 0,
+      review_count: product.review_count || 0,
       variants: product.variants || []
     };
   } catch (error) {

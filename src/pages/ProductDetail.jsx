@@ -64,7 +64,7 @@ const ProductDetail = () => {
   const price = hasDiscount ? product.discountPrice : product.price;
   
   // ✅ Safe brand extraction
-  const brandName = product.brand_name || null;
+  const brandName = product.brand || product.brand_name || null;
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
@@ -108,14 +108,7 @@ const ProductDetail = () => {
             )}
             <h1 className="text-3xl lg:text-4xl font-black text-white leading-tight">{product.title}</h1>
             <p dir="ltr" className="text-sm text-gray-500 mt-2 text-right">{product.titleEn}</p>
-            <div className="flex items-center gap-3 mt-5 pb-6 border-b border-white/10">
-              <StarRating filled={Math.round(product.average_rating || 0)} />
-              <span className="text-xs text-gray-400">
-                {product.average_rating ? product.average_rating.toFixed(1) : '۰'} از ۵ 
-                <span className="mx-1">|</span> 
-                {product.review_count || 0} نظر ثبت شده
-              </span>
-            </div>
+
             <p className="text-sm text-gray-400 leading-7 mt-6">{product.description}</p>
             
             {/* ✅ Safe Attributes Display */}
@@ -207,7 +200,18 @@ const ProductDetail = () => {
 
       {/* --- REVIEWS SECTION --- */}
       <section className="max-w-[1240px] mx-auto px-4 py-8 border-t border-white/10 mt-8">
-        <h2 className="text-2xl font-bold text-white mb-6">نظرات کاربران</h2>
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <h2 className="text-2xl font-bold text-white">نظرات کاربران</h2>
+          <div className="flex items-center gap-3 bg-white/[0.035] border border-white/10 rounded-xl px-4 py-2">
+            <StarRating filled={Math.round(product.average_rating || 0)} />
+            <span className="text-sm text-gray-300 font-bold">
+              {product.average_rating ? product.average_rating.toFixed(1) : '۰'} از ۵ 
+            </span>
+            <span className="text-xs text-gray-500">
+              ({product.review_count || 0} نظر)
+            </span>
+          </div>
+        </div>
         
         {/* Submit Review Form */}
         <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-6 mb-8">

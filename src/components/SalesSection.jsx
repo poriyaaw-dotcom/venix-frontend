@@ -40,14 +40,14 @@ const SalesSection = () => {
 
   if (loading) {
     return (
-      <section className="my-[35px] w-full h-[369px] bg-[linear-gradient(135deg,#C59338_0%,#DE9A00_50%,#F4B942_100%)] flex items-center justify-center text-white">
+      <section className="my-[35px] w-full h-auto md:h-[369px] bg-[linear-gradient(135deg,#C59338_0%,#DE9A00_50%,#F4B942_100%)] flex items-center justify-center text-white">
         در حال بارگذاری...
       </section>
     );
   }
 
   return (
-    <section className="my-[35px] w-full h-[369px] bg-[linear-gradient(135deg,#C59338_0%,#DE9A00_50%,#F4B942_100%)] flex items-center">
+    <section className="my-[35px] w-full h-auto md:h-[369px] bg-[linear-gradient(135deg,#C59338_0%,#DE9A00_50%,#F4B942_100%)] flex items-center">
       <div className="w-full max-w-[1197px] mx-auto px-4 h-full flex flex-col justify-center">
         <div className="flex items-center justify-between mb-6 text-white">
           <h2 className="text-[25px] font-bold drop-shadow-md">پیشنهادهای ویژه</h2>
@@ -59,7 +59,7 @@ const SalesSection = () => {
           </button>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 gap-4 w-full">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

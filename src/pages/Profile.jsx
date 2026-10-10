@@ -232,18 +232,32 @@ const Profile = () => {
                   };
                   return (
                     <div key={order.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-white font-bold">سفارش #{order.id}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-md ${statusColors[order.status] || 'bg-gray-500/20 text-gray-400'}`}>
-                            {statusLabels[order.status] || order.status}
-                          </span>
+                      <div className="w-full">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-white font-bold">سفارش #{order.id}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-md ${statusColors[order.status] || 'bg-gray-500/20 text-gray-400'}`}>
+                              {statusLabels[order.status] || order.status}
+                            </span>
+                          </div>
+                          <div className="text-left">
+                            <span className="text-primary font-black text-lg">{new Intl.NumberFormat('fa-IR').format(order.total_price)}</span>
+                            <span className="text-xs text-gray-500 mr-1">تومان</span>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-400">{new Date(order.created_at).toLocaleDateString('fa-IR')}</p>
-                      </div>
-                      <div className="text-left">
-                        <span className="text-primary font-black text-lg">{new Intl.NumberFormat('fa-IR').format(order.total_price)}</span>
-                        <span className="text-xs text-gray-500 mr-1">تومان</span>
+                        <p className="text-xs text-gray-400 mb-2">{new Date(order.created_at).toLocaleDateString('fa-IR')}</p>
+                        
+                        {/* ✅ NEW: Show ordered items */}
+                        {order.items && order.items.length > 0 && (
+                          <div className="border-t border-white/5 pt-3 mt-1 space-y-2">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-center text-sm">
+                                <span className="text-gray-300">{item.product_title || item.product_title_snapshot} <span className="text-gray-500 text-xs">(x{item.quantity})</span></span>
+                                <span className="text-gray-400">{new Intl.NumberFormat('fa-IR').format(item.unit_price * item.quantity)} تومان</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

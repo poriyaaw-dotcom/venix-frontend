@@ -16,7 +16,7 @@ const HeroSlider = () => {
   return (
     <section className="bg-background flex justify-center mb-[35px]">
       {/* Removed rounded corners */}
-      <div className="relative w-full max-w-[1750px] h-[486px] overflow-hidden bg-primary">
+      <div className="relative w-full max-w-[1750px] h-[250px] md:h-[486px] overflow-hidden bg-primary">
         {posters.map((poster, idx) => (
           <div key={poster.id} className={`absolute inset-0 transition-opacity duration-700 flex items-center justify-center ${poster.bg} ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
             <h2 className="text-6xl font-black text-background/20 tracking-widest">VENIX</h2>
