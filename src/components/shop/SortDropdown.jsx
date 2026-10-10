@@ -28,16 +28,16 @@ const SortDropdown = ({ value, onChange }) => {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 md:gap-2 bg-[#FDF8E8] text-black text-[12px] px-3 md:px-4 py-1.5 md:py-2 rounded-[15px] hover:bg-[#FDF8E8]/80 transition-colors border border-gray/20"
+        className="flex items-center gap-1 md:gap-2 bg-[#FDF8E8] text-black text-[11px] md:text-[12px] px-3 py-1.5 md:px-4 md:py-2 rounded-[15px] hover:bg-[#FDF8E8]/80 transition-colors border border-gray/20"
       >
         <span>مرتب‌سازی: </span>
         <span className="font-bold text-primary">{currentLabel}</span>
-        <FiChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <FiChevronDown className={`w-3.5 h-3.5 md:w-4 md:h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         // Solid background for better visibility
-        <div className="absolute top-full mt-2 left-0 w-[160px] md:w-[180px] bg-[#FDF8E8] rounded-[15px] shadow-xl z-20 overflow-hidden border border-gray/20">
+        <div className="absolute top-full mt-2 right-0 w-[160px] md:w-[180px] bg-[#FDF8E8] rounded-[15px] shadow-xl z-50 overflow-hidden border border-gray/20">
           {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}

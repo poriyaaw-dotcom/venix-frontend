@@ -106,14 +106,16 @@ const Shop = () => {
       <Breadcrumb />
       <section id="shop-section" className="my-[35px] scroll-mt-24">
         <div className="max-w-[1197px] mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-start justify-between mb-4 md:mb-6 relative z-10">
             <h1 className="text-[25px] font-bold text-white">فروشگاه محصولات</h1>
-            <SortDropdown value={sort} onChange={setSort} />
-          </div>
-          <div className="flex justify-end lg:hidden mb-4">
-            <button onClick={() => setIsMobileFilterOpen(true)} className="flex items-center gap-2 bg-[#FDF8E8]/40 text-gray-800 px-4 py-2 rounded-[15px] text-sm font-bold hover:bg-[#FDF8E8]/60 transition">
-              <FiSliders className="w-4 h-4" /> فیلترها
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="relative z-20">
+                <SortDropdown value={sort} onChange={setSort} />
+              </div>
+              <button onClick={() => setIsMobileFilterOpen(true)} className="md:hidden flex items-center gap-1.5 bg-[#FDF8E8]/40 text-gray-800 px-3 py-1.5 md:px-4 md:py-2 rounded-[15px] text-xs md:text-sm font-bold hover:bg-[#FDF8E8]/60 transition">
+                <FiSliders className="w-3.5 h-3.5 md:w-4 md:h-4" /> فیلترها
+              </button>
+            </div>
           </div>
           <div className="flex flex-col lg:flex-row gap-6">
             <aside className="hidden lg:block w-[280px] shrink-0">
@@ -124,7 +126,7 @@ const Shop = () => {
                 نمایش <span className="text-primary font-bold">{currentProducts.length}</span> از <span className="text-primary font-bold">{sortedProducts.length}</span> محصول
               </p>
               {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 justify-items-center">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div key={i} className="w-full bg-white/[0.025] border border-white/10 rounded-2xl p-4 animate-pulse">
                       <div className="w-full aspect-square bg-gray-700/50 rounded-xl mb-4"></div>
@@ -135,7 +137,7 @@ const Shop = () => {
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 justify-items-center min-h-[400px]">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 justify-items-center min-h-[400px]">
                   {currentProducts.length > 0 ? currentProducts.map((product) => <ProductCard key={product.id} product={product} />) : (
                     <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
                       <p className="text-lg font-bold mb-2">محصولی یافت نشد!</p>
@@ -167,7 +169,7 @@ const Shop = () => {
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden flex justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileFilterOpen(false)}></div>
-          <div className="relative h-full w-[85%] max-w-[320px] bg-background shadow-2xl overflow-y-auto animate-slideInRight">
+          <div className="relative h-full w-[85%] max-w-[320px] bg-background shadow-2xl overflow-y-auto animate-slideInRight rounded-r-2xl">
             <div className="sticky top-0 bg-background z-10 p-4 flex justify-end border-b border-gray-700/30">
               <button onClick={() => setIsMobileFilterOpen(false)} className="text-gray-400 hover:text-primary transition"><FiX className="w-6 h-6" /></button>
             </div>
