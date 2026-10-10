@@ -39,7 +39,12 @@ const MainCategories = () => {
                 key={cat.id}
                 className="bg-[#252525] rounded-[30px] flex flex-col items-center justify-end cursor-pointer hover:scale-105 transition-transform shadow-lg border border-primary/5 relative overflow-hidden group w-[180px] h-[180px] p-4"
               >
-                <img src="/category-img.png" alt={cat.name} className="w-24 h-24 object-contain mb-2 group-hover:scale-110 transition-transform duration-300 z-10" />
+                <img 
+  src={cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `http://127.0.0.1:8000${cat.image_url}`) : '/category-img.png'} 
+  alt={cat.name} 
+  className="w-24 h-24 object-contain mb-2 group-hover:scale-110 transition-transform duration-300 z-10"
+  onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }} 
+/>
                 <h3 className="font-bold text-sm text-primary z-10 text-center">{cat.name}</h3>
               </Link>
             ))

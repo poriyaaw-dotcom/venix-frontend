@@ -8,7 +8,6 @@ const SORT_OPTIONS = [
   { value: 'popular', label: 'پرفروش‌ترین' },
   { value: 'price-asc', label: 'ارزان‌ترین' },
   { value: 'price-desc', label: 'گران‌ترین' },
-  { value: 'discount', label: 'بیشترین تخفیف' },
 ];
 
 const SortDropdown = ({ value, onChange }) => {

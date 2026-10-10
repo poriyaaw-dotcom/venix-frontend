@@ -3,8 +3,6 @@ import toast from 'react-hot-toast';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar } from 'react-icons/fi';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 
@@ -41,6 +39,8 @@ const Admin = () => {
   const [selectedGroup, setSelectedGroup] = useState('VISITOR');
   const [productSearch, setProductSearch] = useState('');
   const [showDeactivatedOnly, setShowDeactivatedOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [productTab, setProductTab] = useState('base');
   const [productForm, setProductForm] = useState({
@@ -78,8 +78,12 @@ const Admin = () => {
           const res = await fetch(`${API_BASE_URL}/admin/stats`, { headers });
           if (res.ok) setDashboardStats(await res.json());
         } else if (activeTab === 'products') {
-          const res = await fetch(`${API_BASE_URL}/admin/products`, { headers });
-          if (res.ok) setProductsList(await res.json());
+          const res = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setProductsList(data.items || []);
+            setTotalPages(data.total_pages || 1);
+          }
           const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers });
           if (resCats.ok) setCategories(await resCats.json());
           const resBrands = await fetch(`${API_BASE_URL}/admin/brands`, { headers });
@@ -111,7 +115,7 @@ const Admin = () => {
       } catch (error) { console.error(error); }
     };
     fetchData();
-  }, [activeTab, isAuthorized]);
+  }, [activeTab, isAuthorized, currentPage]);
 
   // ✅ NEW: Helper functions for clean status display
   const getStatusLabel = (status) => {
@@ -221,7 +225,7 @@ const Admin = () => {
       setIsAddProductOpen(false);
       setEditingProduct(null);
       setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }] });
-      const resList = await fetch(`${API_BASE_URL}/admin/products`, { headers });
+      const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
       if (resList.ok) setProductsList(await resList.json());
     } catch (error) {
       console.error(error);
@@ -265,7 +269,12 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        setProductsList(productsList.filter(p => p.id !== productId));
+        const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
+        if (resList.ok) {
+          const data = await resList.json();
+          setProductsList(data.items || []);
+          setTotalPages(data.total_pages || 1);
+        }
       } else {
         toast.error('خطا در حذف محصول');
       }
@@ -528,7 +537,7 @@ const Admin = () => {
         body: JSON.stringify({ is_active: !currentActive })
       });
       if (res.ok) {
-        const res2 = await fetch(`${API_BASE_URL}/admin/products`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res2 = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setProductsList(await res2.json());
       }
     } catch (error) { toast.error('خطای شبکه'); }
@@ -575,7 +584,6 @@ const Admin = () => {
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
 
-      <Header />
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 py-8 flex gap-6">
         <aside className="w-[250px] shrink-0 hidden md:block">
           <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 sticky top-24">
@@ -711,6 +719,27 @@ const Admin = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6">
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-xl bg-white/5 text-white disabled:opacity-50 hover:bg-white/10 transition text-sm font-bold"
+                  >
+                    صفحه قبل
+                  </button>
+                  <span className="text-sm text-gray-400 font-bold">صفحه {currentPage} از {totalPages}</span>
+                  <button 
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-xl bg-white/5 text-white disabled:opacity-50 hover:bg-white/10 transition text-sm font-bold"
+                  >
+                    صفحه بعد
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1180,7 +1209,6 @@ const Admin = () => {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };
