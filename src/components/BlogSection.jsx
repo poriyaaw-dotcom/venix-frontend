@@ -50,7 +50,7 @@ const BlogSection = () => {
         </div>
 
         {/* --- MOBILE LAYOUT (Simple, native horizontal scroll) --- */}
-        <div className="md:hidden flex gap-4 overflow-x-auto pb-4 px-4 -mx-4" style={{ scrollbarWidth: 'none' }}>
+        <div className="md:hidden flex gap-3 overflow-x-auto pb-4 px-4 -mx-4" style={{ scrollbarWidth: 'none' }}>
           {blogs.map((blog) => {
             const imageUrl = blog.image_url 
               ? (blog.image_url.startsWith('http') ? blog.image_url : `http://127.0.0.1:8000${blog.image_url}`)
@@ -59,19 +59,19 @@ const BlogSection = () => {
               <div 
                 key={blog.id} 
                 onClick={() => navigate(`/blog/${blog.id}`)}
-                className="min-w-[260px] bg-[#2a2a2a] rounded-2xl overflow-hidden border border-white/10 flex-shrink-0 cursor-pointer"
+                className="w-[46%] bg-[#2a2a2a] rounded-xl overflow-hidden border border-white/10 flex-shrink-0 cursor-pointer"
               >
-                <div className="h-32 w-full bg-gray-800 flex items-center justify-center relative overflow-hidden">
+                <div className="h-28 w-full bg-gray-800 flex items-center justify-center relative overflow-hidden">
                    {imageUrl ? (
                      <img src={imageUrl} alt={blog.title} className="w-full h-full object-cover" />
                    ) : (
                      <span className="text-white/30 text-3xl font-bold">VENIX</span>
                    )}
                 </div>
-                <div className="p-4 flex flex-col justify-between text-white">
+                <div className="p-2 flex flex-col justify-between text-white">
                   <div>
-                    <h3 className="text-sm font-bold mb-1 text-primary line-clamp-1">{blog.title}</h3>
-                    <p className="text-[10px] text-gray-400 line-clamp-2">{blog.content}</p>
+                    <h3 className="text-xs font-bold mb-0.5 text-primary line-clamp-1">{blog.title}</h3>
+                    <p className="text-[9px] text-gray-400 line-clamp-2">{blog.content}</p>
                   </div>
                 </div>
               </div>
@@ -80,7 +80,7 @@ const BlogSection = () => {
         </div>
 
         {/* --- DESKTOP LAYOUT (Original 3D Carousel) --- */}
-        <div className="hidden md:block relative h-[360px] flex items-start justify-center perspective-1000 pt-2">
+        <div className="hidden md:block relative w-full h-[360px] flex items-start justify-center perspective-1000 pt-2">
           {blogs.map((blog, index) => {
             let offset = index - activeIndex;
             const len = blogs.length;
@@ -110,7 +110,7 @@ const BlogSection = () => {
               : null;
 
             const style = {
-              transform: `translateX(${offset * 170}px) scale(${scale}) rotateY(${offset * -15}deg)`,
+              transform: `translateX(calc(-50% + ${offset * 170}px)) scale(${scale}) rotateY(${offset * -15}deg)`,
               zIndex: 10 - distance,
               opacity: 1 - distance * 0.2,
               filter: isActive ? 'brightness(1)' : 'brightness(0.7)',
@@ -120,7 +120,7 @@ const BlogSection = () => {
               <div
                 key={blog.id}
                 onClick={() => isActive ? navigate(`/blog/${blog.id}`) : handleCardClick(index)}
-                className={`absolute ${width} ${height} rounded-3xl cursor-pointer transition-all duration-500 ease-out shadow-2xl flex flex-col overflow-hidden border-4 border-transparent hover:border-white/20`}
+                className={`absolute left-1/2 ${width} ${height} rounded-3xl cursor-pointer transition-all duration-500 ease-out shadow-2xl flex flex-col overflow-hidden border-4 border-transparent hover:border-white/20`}
                 style={style}
               >
                 <div className="h-3/5 w-full bg-gray-800 flex items-center justify-center relative overflow-hidden">
