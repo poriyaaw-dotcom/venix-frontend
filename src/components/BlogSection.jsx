@@ -39,17 +39,48 @@ const BlogSection = () => {
   return (
     <section className="mt-[30px] mb-[35px] bg-background overflow-hidden relative">
       <div className="max-w-[1197px] mx-auto px-6">
-        <div className="flex items-center justify-between mb-6 text-white relative z-20">
-          <h2 className="text-[25px] font-bold">بلاگ تخصصی</h2>
+        <div className="flex items-center justify-between mb-4 md:mb-6 text-white relative z-20 px-4 md:px-0">
+          <h2 className="text-xl md:text-[25px] font-bold">بلاگ تخصصی</h2>
           <button 
             onClick={() => navigate('/blog')} 
-            className="bg-button text-white px-6 py-2 rounded-xl hover:opacity-90 transition text-sm font-medium shadow-md"
+            className="bg-button text-white px-4 py-1.5 md:px-6 md:py-2 rounded-xl hover:opacity-90 transition text-xs md:text-sm font-medium shadow-md"
           >
             مشاهده همه
           </button>
         </div>
 
-        <div className="relative h-[360px] flex items-start justify-center perspective-1000 pt-2">
+        {/* --- MOBILE LAYOUT (Simple, native horizontal scroll) --- */}
+        <div className="md:hidden flex gap-4 overflow-x-auto pb-4 px-4 -mx-4" style={{ scrollbarWidth: 'none' }}>
+          {blogs.map((blog) => {
+            const imageUrl = blog.image_url 
+              ? (blog.image_url.startsWith('http') ? blog.image_url : `http://127.0.0.1:8000${blog.image_url}`)
+              : null;
+            return (
+              <div 
+                key={blog.id} 
+                onClick={() => navigate(`/blog/${blog.id}`)}
+                className="min-w-[260px] bg-[#2a2a2a] rounded-2xl overflow-hidden border border-white/10 flex-shrink-0 cursor-pointer"
+              >
+                <div className="h-32 w-full bg-gray-800 flex items-center justify-center relative overflow-hidden">
+                   {imageUrl ? (
+                     <img src={imageUrl} alt={blog.title} className="w-full h-full object-cover" />
+                   ) : (
+                     <span className="text-white/30 text-3xl font-bold">VENIX</span>
+                   )}
+                </div>
+                <div className="p-4 flex flex-col justify-between text-white">
+                  <div>
+                    <h3 className="text-sm font-bold mb-1 text-primary line-clamp-1">{blog.title}</h3>
+                    <p className="text-[10px] text-gray-400 line-clamp-2">{blog.content}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* --- DESKTOP LAYOUT (Original 3D Carousel) --- */}
+        <div className="hidden md:block relative h-[360px] flex items-start justify-center perspective-1000 pt-2">
           {blogs.map((blog, index) => {
             let offset = index - activeIndex;
             const len = blogs.length;

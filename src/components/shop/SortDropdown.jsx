@@ -37,7 +37,7 @@ const SortDropdown = ({ value, onChange }) => {
 
       {open && (
         // Solid background for better visibility
-        <div className="absolute top-full mt-2 right-0 w-[160px] md:w-[180px] bg-[#FDF8E8] rounded-[15px] shadow-xl z-50 overflow-hidden border border-gray/20">
+        <div className="absolute top-full mt-2 left-0 w-[160px] md:w-[180px] bg-[#FDF8E8] rounded-[15px] shadow-xl z-50 overflow-hidden border border-gray/20">
           {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}

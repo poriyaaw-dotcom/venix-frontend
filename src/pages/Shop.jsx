@@ -169,7 +169,7 @@ const Shop = () => {
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden flex justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileFilterOpen(false)}></div>
-          <div className="relative h-full w-[85%] max-w-[320px] bg-background shadow-2xl overflow-y-auto animate-slideInRight rounded-r-2xl">
+          <div className="relative h-full w-[85%] max-w-[320px] bg-background shadow-2xl overflow-y-auto animate-slideInLeft rounded-r-2xl">
             <div className="sticky top-0 bg-background z-10 p-4 flex justify-end border-b border-gray-700/30">
               <button onClick={() => setIsMobileFilterOpen(false)} className="text-gray-400 hover:text-primary transition"><FiX className="w-6 h-6" /></button>
             </div>

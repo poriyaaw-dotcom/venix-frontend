@@ -16,15 +16,15 @@ const HeroSlider = () => {
   return (
     <section className="bg-background flex justify-center mb-[35px]">
       {/* Removed rounded corners */}
-      <div className="relative w-full max-w-[1750px] h-[250px] md:h-[486px] overflow-hidden bg-primary">
+      <div className="relative w-full max-w-[1750px] h-[200px] md:h-[486px] overflow-hidden bg-primary">
         {posters.map((poster, idx) => (
           <div key={poster.id} className={`absolute inset-0 transition-opacity duration-700 flex items-center justify-center ${poster.bg} ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
-            <h2 className="text-6xl font-black text-background/20 tracking-widest">VENIX</h2>
+            <h2 className="text-4xl md:text-6xl font-black text-background/20 tracking-widest">VENIX</h2>
           </div>
         ))}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 md:gap-3">
           {posters.map((_, idx) => (
-            <button key={idx} onClick={() => setCurrentSlide(idx)} className={`w-3 h-3 rounded-full transition-all ${idx === currentSlide ? 'bg-background w-8' : 'bg-background/50'}`} />
+            <button key={idx} onClick={() => setCurrentSlide(idx)} className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all ${idx === currentSlide ? 'bg-background w-6 md:w-8' : 'bg-background/50'}`} />
           ))}
         </div>
       </div>
