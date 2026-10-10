@@ -174,12 +174,12 @@ const Profile = () => {
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
       <Header />
-      <main className="flex-1 max-w-[1240px] w-full mx-auto px-4 py-12">
-        <h1 className="text-3xl font-black text-white mb-8">حساب کاربری</h1>
+      <main className="flex-1 max-w-[1240px] w-full mx-auto px-4 py-8 md:py-12">
+        <h1 className="text-2xl md:text-3xl font-black text-white mb-6 md:mb-8">حساب کاربری</h1>
         
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
-          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-6 flex flex-col items-center text-center h-fit sticky top-24">
-            <div className="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mb-4 text-3xl font-bold text-primary">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 md:gap-8">
+          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-4 md:p-6 flex flex-col items-center text-center h-fit sticky top-24">
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-primary/20 rounded-full flex items-center justify-center mb-3 md:mb-4 text-2xl md:text-3xl font-bold text-primary">
               {userData.fullName ? userData.fullName.charAt(0) : <FiUser className="w-10 h-10" />}
             </div>
             
@@ -191,16 +191,16 @@ const Profile = () => {
               {getRoleLabel()}
             </span>
             
-            <button onClick={() => setIsEditModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 py-3 rounded-xl transition font-bold mb-3">
+            <button onClick={() => setIsEditModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 py-2.5 md:py-3 rounded-xl transition font-bold mb-3 text-sm md:text-base">
               <FiEdit2 /> ویرایش پروفایل
             </button>
-            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 py-3 rounded-xl transition font-bold">
+            <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 py-2.5 md:py-3 rounded-xl transition font-bold text-sm md:text-base">
               <FiLogOut /> خروج
             </button>
           </div>
 
-          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-8 min-h-[400px]">
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><FiPackage className="w-5 h-5 text-primary" /> تاریخچه سفارشات</h3>
+          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-4 md:p-8 min-h-[400px]">
+            <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 flex items-center gap-2"><FiPackage className="w-5 h-5 text-primary" /> تاریخچه سفارشات</h3>
             {loadingOrders ? (
               <div className="flex justify-center py-12"><span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></span></div>
             ) : orders.length === 0 ? (
@@ -270,23 +270,23 @@ const Profile = () => {
 
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#1a1a1a] z-10">
+          <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl md:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center p-4 md:p-6 border-b border-white/10 sticky top-0 bg-[#1a1a1a] z-10">
               <h2 className="text-xl font-bold text-white">ویرایش اطلاعات</h2>
               <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-white"><FiX size={24} /></button>
             </div>
-            <div className="flex border-b border-white/10 px-6">
+            <div className="flex border-b border-white/10 px-4 md:px-6">
               <button onClick={() => setActiveTab('info')} className={`py-4 px-6 font-bold transition ${activeTab === 'info' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>اطلاعات فردی</button>
               <button onClick={() => setActiveTab('address')} className={`py-4 px-6 font-bold transition ${activeTab === 'address' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>آدرس‌ها</button>
             </div>
-            <div className="p-6">
+            <div className="p-4 md:p-6">
               {activeTab === 'info' && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="block text-sm text-gray-400 mb-2">نام</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" /></div>
-                    <div><label className="block text-sm text-gray-400 mb-2">نام خانوادگی</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" /></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    <div><label className="block text-sm text-gray-400 mb-2">نام</label><input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white outline-none focus:border-primary" /></div>
+                    <div><label className="block text-sm text-gray-400 mb-2">نام خانوادگی</label><input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white outline-none focus:border-primary" /></div>
                   </div>
-                  <button onClick={handleSaveInfo} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition">ذخیره تغییرات</button>
+                  <button onClick={handleSaveInfo} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 md:py-3 rounded-xl transition text-sm md:text-base">ذخیره تغییرات</button>
                 </div>
               )}
               {activeTab === 'address' && (

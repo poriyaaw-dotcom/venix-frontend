@@ -16,7 +16,7 @@ const Cart = () => {
       <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
         <Header />
         <main className="max-w-[1240px] mx-auto px-4 py-20 text-center">
-          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-12 max-w-2xl mx-auto">
+          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-6 md:p-12 max-w-2xl mx-auto">
             <FiShoppingBag className="mx-auto text-gray-600 mb-6" style={{ width: '80px', height: '80px' }} />
             <h1 className="text-2xl font-black text-white mb-3">سبد خرید شما خالی است!</h1>
             <p className="text-gray-400 mb-8">به نظر می‌رسد هنوز محصولی به سبد خرید خود اضافه نکرده‌اید.</p>
@@ -58,7 +58,57 @@ const Cart = () => {
               console.log("Cart Item Data:", item);
               
               return (
-                <div key={itemId} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
+                <>
+                  {/* --- MOBILE LAYOUT (Strictly md:hidden) --- */}
+                  <div key={itemId} className="md:hidden bg-white/[0.035] border border-white/10 rounded-2xl p-4 transition hover:border-white/20">
+                  {/* Top Row: Image + Product Info */}
+                  <div className="flex items-center gap-4 mb-4">
+                    <Link to={`/product/${item.product_id || item.id}`} className="w-24 h-24 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
+                      <img 
+                        src={(item.image || item.image_url) ? ((item.image || item.image_url).startsWith('http') ? (item.image || item.image_url) : `http://127.0.0.1:8000${item.image || item.image_url}`) : '/category-img.png'} 
+                        alt={item.title} 
+                        className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" 
+                        onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }}
+                      />
+                    </Link>
+                    <div className="flex-1 text-right">
+                      <Link to={`/product/${item.product_id || item.id}`} className="text-sm font-bold text-white hover:text-primary transition line-clamp-2">
+                        {item.title}
+                      </Link>
+                      <p dir="ltr" className="text-xs text-gray-500 mt-1">{item.titleEn}</p>
+                    </div>
+                  </div>
+
+                  {/* Middle Row: Quantity Controls + Delete Button */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center border border-white/10 rounded-xl overflow-hidden bg-white/[0.025]">
+                      <button onClick={() => updateQuantity(itemId, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
+                        <FiMinus className="w-4 h-4" />
+                      </button>
+                      <span className="w-12 text-center text-base font-bold text-white">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(itemId, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
+                        <FiPlus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button onClick={() => removeFromCart(itemId)} className="flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition">
+                      <FiTrash2 className="w-4 h-4" />
+                      <span className="text-sm">حذف</span>
+                    </button>
+                  </div>
+
+                  {/* Bottom Row: Price */}
+                  <div className="border-t border-white/10 pt-3 flex justify-between items-center">
+                    <div className="text-left">
+                      {hasDiscount && (
+                        <div className="text-xs text-gray-500 line-through">{formatPrice(item.price * item.quantity)}</div>
+                      )}
+                      <div className="text-lg font-black text-white">{formatPrice(finalPrice * item.quantity)} <span className="text-xs font-normal text-gray-500">تومان</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- DESKTOP LAYOUT (Strictly hidden md:flex) - 100% ORIGINAL --- */}
+                <div key={itemId} className="hidden md:flex bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
                   <Link to={`/product/${item.product_id || item.id}`} className="w-full sm:w-28 h-28 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
                     <img 
   src={
@@ -82,7 +132,6 @@ const Cart = () => {
                   </div>
 
                   <div className="flex items-center border border-white/10 rounded-xl overflow-hidden bg-white/[0.025]">
-                    {/* ✅ FIX: Use itemId to ensure CartContext finds the correct item */}
                     <button onClick={() => updateQuantity(itemId, item.quantity - 1)} className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition">
                       <FiMinus className="w-4 h-4" />
                     </button>
@@ -100,11 +149,11 @@ const Cart = () => {
                     <div className="text-[10px] text-gray-500 font-medium">تومان</div>
                   </div>
 
-                  {/* ✅ FIX: Use itemId for removal */}
                   <button onClick={() => removeFromCart(itemId)} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition">
                     <FiTrash2 className="w-4 h-4" />
                   </button>
                 </div>
+                </>
               );
             })}
           </div>

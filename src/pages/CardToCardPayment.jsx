@@ -110,34 +110,34 @@ const CardToCardPayment = () => {
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
       <Header />
       <main className="flex-1 max-w-2xl mx-auto px-4 py-12 w-full">
-        <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-5 md:p-8 shadow-2xl">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <FiCheckCircle className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-black text-white mb-2">پرداخت کارت به کارت</h1>
+            <h1 className="text-xl md:text-2xl font-black text-white mb-2">پرداخت کارت به کارت</h1>
             <p className="text-gray-400 text-sm">لطفاً مبلغ زیر را به حساب اعلام شده واریز کرده و شماره پیگیری را وارد نمایید.</p>
           </div>
 
           <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 mb-8 text-center">
             <p className="text-gray-400 text-sm mb-1">مبلغ قابل پرداخت</p>
-            <p className="text-3xl font-black text-primary">{formatPrice(amount || 0)} <span className="text-sm font-normal text-gray-400">تومان</span></p>
+            <p className="text-2xl md:text-3xl font-black text-primary">{formatPrice(amount || 0)} <span className="text-sm font-normal text-gray-400">تومان</span></p>
           </div>
 
           <div className="space-y-4 mb-8">
-            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
+            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-3 md:p-4 flex justify-between items-center gap-3">
               <div>
                 <p className="text-xs text-gray-500 mb-1">نام بانک</p>
                 <p className="text-white font-bold">{bankInfo.bank_name}</p>
               </div>
             </div>
-            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
+            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-3 md:p-4 flex justify-between items-center gap-3">
               <div>
                 <p className="text-xs text-gray-500 mb-1">نام صاحب حساب</p>
                 <p className="text-white font-bold">{bankInfo.account_holder_name}</p>
               </div>
             </div>
-            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
+            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-3 md:p-4 flex justify-between items-center gap-3">
               <div>
                 <p className="text-xs text-gray-500 mb-1">شماره کارت</p>
                 <p className="text-white font-bold font-mono text-lg" dir="ltr">{bankInfo.card_number}</p>
@@ -146,7 +146,7 @@ const CardToCardPayment = () => {
                 <FiCopy />
               </button>
             </div>
-            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
+            <div className="bg-white/[0.025] border border-white/10 rounded-xl p-3 md:p-4 flex justify-between items-center gap-3">
               <div>
                 <p className="text-xs text-gray-500 mb-1">شماره شبا</p>
                 <p className="text-white font-bold font-mono text-sm" dir="ltr">{bankInfo.sheba_number}</p>
@@ -165,7 +165,7 @@ const CardToCardPayment = () => {
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="1234567890"
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-4 text-white text-center text-lg tracking-widest outline-none focus:border-primary transition font-mono"
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 md:py-4 text-white text-center text-base md:text-lg tracking-widest outline-none focus:border-primary transition font-mono"
                 dir="ltr"
                 required
               />
@@ -174,7 +174,7 @@ const CardToCardPayment = () => {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? 'در حال ثبت...' : 'پرداخت کردم'} <FiCheckCircle />
             </button>

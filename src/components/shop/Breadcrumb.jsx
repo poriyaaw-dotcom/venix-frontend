@@ -5,7 +5,7 @@ import React from 'react';
 const Breadcrumb = () => {
   return (
     <div className="bg-background border-b border-gray/10">
-      <div className="max-w-[1197px] mx-auto px-4 py-4">
+      <div className="max-w-[1197px] mx-auto px-4 py-3 md:py-4">
         <nav aria-label="breadcrumb">
           <ol className="flex items-center gap-2">
             <li>

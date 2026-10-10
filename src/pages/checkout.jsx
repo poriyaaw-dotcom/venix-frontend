@@ -97,7 +97,7 @@ const Checkout = () => {
       <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
         <Header />
         <main className="max-w-[1240px] mx-auto px-4 py-20 text-center">
-          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-12 max-w-2xl mx-auto">
+          <div className="bg-white/[0.035] border border-white/10 rounded-3xl p-6 md:p-12 max-w-2xl mx-auto">
             <FiAlertCircle className="mx-auto text-gray-600 mb-6" style={{ width: '80px', height: '80px' }} />
             <h1 className="text-2xl font-black text-white mb-3">سبد خرید شما خالی است!</h1>
             <button onClick={() => navigate('/cart')} className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary/90 transition shadow-lg shadow-primary/20 mt-4">
@@ -126,12 +126,12 @@ const Checkout = () => {
         <h1 className="text-3xl font-black text-white mb-8">تسویه حساب و پرداخت</h1>
         {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-6 flex items-center gap-2"><FiAlertCircle className="w-5 h-5 shrink-0" /><span>{error}</span></div>}
         <div className="grid grid-cols-1 max-w-3xl mx-auto">
-          <form onSubmit={handleSubmit} className="bg-white/[0.035] border border-white/10 rounded-2xl p-6 h-fit">
+          <form onSubmit={handleSubmit} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 md:p-6 h-fit">
             <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10 flex items-center gap-2"><FiTruck className="text-primary" /> اطلاعات ارسال سفارش</h2>
             
             {/* Single Address Selector at the Top */}
             {savedAddresses.length > 0 && (
-              <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+              <div className="mb-4 md:mb-6 p-3 md:p-4 bg-primary/5 border border-primary/20 rounded-xl">
                 <label className="block text-sm font-medium text-primary mb-2">انتخاب آدرس از پروفایل</label>
                 <select 
                   onChange={(e) => {
@@ -154,32 +154,32 @@ const Checkout = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">استان</label>
-                <input type="text" name="province" required value={formData.province} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" placeholder="تهران" />
+                <input type="text" name="province" required value={formData.province} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" placeholder="تهران" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">شهر</label>
-                <input type="text" name="city" required value={formData.city} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" placeholder="تهران" />
+                <input type="text" name="city" required value={formData.city} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" placeholder="تهران" />
               </div>
             </div>
-            <div className="mb-6">
+            <div className="mb-4 md:mb-6">
               <label className="block text-sm font-medium text-gray-400 mb-2">آدرس کامل</label>
-              <textarea name="full_address" required value={formData.full_address} onChange={handleChange} rows="3" autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" placeholder="خیابان، کوچه، پلاک، واحد" />
+              <textarea name="full_address" required value={formData.full_address} onChange={handleChange} rows="3" autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" placeholder="خیابان، کوچه، پلاک، واحد" />
             </div>
-            <div className="grid grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-2 gap-3 md:gap-6 mb-6 md:mb-8">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">کد پستی</label>
-                <input type="text" name="postal_code" required value={formData.postal_code} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" dir="ltr" placeholder="۱۲۴۵۶۷۸۰" />
+                <input type="text" name="postal_code" required value={formData.postal_code} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" dir="ltr" placeholder="۱۲۴۵۶۷۸۰" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">شماره تماس</label>
-                <input type="text" name="phone" required value={formData.phone} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" dir="ltr" placeholder="۰۹۱۲۳۵۶۷۸۹" />
+                <input type="text" name="phone" required value={formData.phone} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" dir="ltr" placeholder="۰۹۱۲۳۵۶۷۸۹" />
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className={`w-full bg-button hover:bg-button/90 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <button type="submit" disabled={loading} className={`w-full bg-button hover:bg-button/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
               {loading ? <><span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span> در حال پردازش...</> : <>ادامه و پرداخت <FiChevronLeft /></>}
             </button>
           </form>

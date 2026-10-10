@@ -169,13 +169,13 @@ const Login = () => {
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md bg-white/[0.035] border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="w-full max-w-md bg-white/[0.035] border border-white/10 rounded-3xl p-5 md:p-8 shadow-2xl">
           <div className="flex bg-black/20 rounded-xl p-1 mb-8">
             <button onClick={() => { setIsPartnerMode(false); setStep(1); }} className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${!isPartnerMode ? 'bg-primary text-white' : 'text-gray-400'}`}>ورود مشتری</button>
             <button onClick={() => { setIsPartnerMode(true); setStep(1); }} className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${isPartnerMode ? 'bg-primary text-white' : 'text-gray-400'}`}>همکار هستم</button>
           </div>
 
-          <h2 className="text-2xl font-black text-white mb-2 text-center">
+          <h2 className="text-xl md:text-2xl font-black text-white mb-2 text-center">
             {isPartnerMode ? (step === 3 ? 'ثبت درخواست همکاری' : 'ورود همکاران') : 'ورود به حساب کاربری'}
           </h2>
           <p className="text-gray-400 text-sm text-center mb-8">
@@ -188,10 +188,10 @@ const Login = () => {
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="relative">
                 <FiUser className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09XXXXXXXXX" required className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white outline-none focus:border-primary transition" dir="ltr" />
+                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09XXXXXXXXX" required className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 md:py-4 text-white outline-none focus:border-primary transition" dir="ltr" />
               </div>
               
-              <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
+              <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition flex items-center justify-center gap-2">
                 {loading ? '...' : 'دریافت کد تایید'} <FiArrowLeft />
               </button>
             </form>
@@ -201,7 +201,7 @@ const Login = () => {
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="relative">
                 <FiLock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="12345" required maxLength="5" inputMode="numeric" className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white text-center text-2xl tracking-widest outline-none focus:border-primary transition" dir="ltr" />
+                <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="12345" required maxLength="5" inputMode="numeric" className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 md:py-4 text-white text-center text-xl md:text-2xl tracking-widest outline-none focus:border-primary transition" dir="ltr" />
               </div>
               
               {/* ✅ ONLY show resend/countdown AFTER the first code is sent */}
@@ -223,7 +223,7 @@ const Login = () => {
                 <p className="text-red-400 text-sm text-center mb-4">{errorMessage}</p>
               )}
               
-              <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition">
+              <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition">
                 {loading ? '...' : 'ورود به حساب'}
               </button>
               <button type="button" onClick={() => { setStep(1); setIsOtpSent(false); setCooldown(0); setErrorMessage(''); }} className="w-full text-gray-400 text-sm hover:text-white">تغییر شماره</button>
@@ -232,14 +232,14 @@ const Login = () => {
 
           {step === 3 && isPartnerMode && (
             <form onSubmit={handlePartnerSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="نام" value={firstName} onChange={e => setFirstName(e.target.value)} required className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                <input type="text" placeholder="نام خانوادگی" value={lastName} onChange={e => setLastName(e.target.value)} required className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="text" placeholder="نام" value={firstName} onChange={e => setFirstName(e.target.value)} required className="bg-black/20 border border-white/10 rounded-xl px-3 md:px-4 py-3 text-sm md:text-base text-white outline-none focus:border-primary" />
+                <input type="text" placeholder="نام خانوادگی" value={lastName} onChange={e => setLastName(e.target.value)} required className="bg-black/20 border border-white/10 rounded-xl px-3 md:px-4 py-3 text-sm md:text-base text-white outline-none focus:border-primary" />
               </div>
-              <input type="text" placeholder="نام فروشگاه / شرکت" value={businessName} onChange={e => setBusinessName(e.target.value)} required className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-              <textarea placeholder="توضیحات یا مدارک (اختیاری)" value={businessDesc} onChange={e => setBusinessDesc(e.target.value)} rows="3" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+              <input type="text" placeholder="نام فروشگاه / شرکت" value={businessName} onChange={e => setBusinessName(e.target.value)} required className="w-full bg-black/20 border border-white/10 rounded-xl px-3 md:px-4 py-3 text-sm md:text-base text-white outline-none focus:border-primary" />
+              <textarea placeholder="توضیحات یا مدارک (اختیاری)" value={businessDesc} onChange={e => setBusinessDesc(e.target.value)} rows="3" className="w-full bg-black/20 border border-white/10 rounded-xl px-3 md:px-4 py-3 text-sm md:text-base text-white outline-none focus:border-primary" />
               
-              <button type="submit" disabled={loading} className="w-full bg-button hover:bg-button/90 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
+              <button type="submit" disabled={loading} className="w-full bg-button hover:bg-button/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition flex items-center justify-center gap-2">
                 <FiBriefcase /> {loading ? '...' : 'ثبت درخواست همکاری'}
               </button>
             </form>

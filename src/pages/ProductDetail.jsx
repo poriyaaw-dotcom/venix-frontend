@@ -49,9 +49,9 @@ const ProductDetail = () => {
     loadReviews();
   }, [id]);
 
-  if (loading) return <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center"><span className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></span></div>;
+  if (loading) return <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center px-4"><span className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></span></div>;
   if (!product) return (
-    <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center">
+    <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="text-center">
         <h1 className="text-5xl font-bold text-white mb-4">404</h1>
         <p className="text-gray-400 mb-6">محصول موردنظر وجود ندارد.</p>
@@ -79,20 +79,20 @@ const ProductDetail = () => {
         </div>
       </div>
       <main className="max-w-[1240px] mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 md:gap-8">
           <div className="relative">
-            <div className="bg-[#FDF8E8]/[0.035] border border-white/10 rounded-[28px] p-5 relative">
+            <div className="bg-[#FDF8E8]/[0.035] border border-white/10 rounded-[20px] md:rounded-[28px] p-4 md:p-5 relative">
               <button onClick={() => setIsFavorite(!isFavorite)} className={`absolute top-8 right-8 z-10 w-11 h-11 rounded-full flex items-center justify-center border transition ${isFavorite ? 'bg-primary/15 border-primary text-primary' : 'bg-black/20 border-white/10 text-gray-400 hover:text-primary'}`}>
                 <FiHeart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
               </button>
               {hasDiscount && <div className="absolute top-8 left-8 z-10 bg-primary text-white text-xs font-bold px-4 py-2 rounded-full">فروش ویژه</div>}
-              <div className="h-[420px] flex items-center justify-center">
-                <img src={product.image} alt={product.title} className="max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
+              <div className="h-[300px] md:h-[420px] flex items-center justify-center">
+                <img src={product.image} alt={product.title} className="max-h-[260px] md:max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-3 gap-2 md:gap-3 mt-4">
               {[{icon: FiTruck, text: 'ارسال سریع'}, {icon: FiShield, text: 'خرید امن'}, {icon: FiCheck, text: 'ضمانت اصالت'}].map((item, i) => (
-                <div key={i} className="bg-white/[0.025] border border-white/10 rounded-2xl p-4 text-center">
+                <div key={i} className="bg-white/[0.025] border border-white/10 rounded-xl md:rounded-2xl p-2 md:p-4 text-center">
                   <item.icon className="mx-auto mb-2 text-primary" />
                   <span className="text-[11px] text-gray-400">{item.text}</span>
                 </div>
@@ -106,14 +106,14 @@ const ProductDetail = () => {
                 برند: {brandName}
               </span>
             )}
-            <h1 className="text-3xl lg:text-4xl font-black text-white leading-tight">{product.title}</h1>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white leading-tight">{product.title}</h1>
             <p dir="ltr" className="text-sm text-gray-500 mt-2 text-right">{product.titleEn}</p>
 
             <p className="text-sm text-gray-400 leading-7 mt-6">{product.description}</p>
             
             {/* ✅ Safe Attributes Display */}
             {product.attributes && Array.isArray(product.attributes) && product.attributes.length > 0 && (
-              <div className="mt-8">
+              <div className="mt-6 md:mt-8">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <FiSettings className="text-primary" /> ویژگی‌ها و مشخصات
                 </h3>
@@ -134,7 +134,7 @@ const ProductDetail = () => {
 
             {/* ✅ Variants Display */}
             {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
-              <div className="mt-8">
+              <div className="mt-6 md:mt-8">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <FiShoppingCart className="text-primary" /> واریانت‌های موجود
                 </h3>
@@ -161,7 +161,7 @@ const ProductDetail = () => {
               <span className="text-xs text-green-400">موجود در انبار</span>
             </div>
             <div className="mt-5 bg-white/[0.035] border border-white/10 rounded-2xl p-5">
-              <div className="flex items-end justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                   {hasDiscount && <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(product.price)} تومان</div>}
                   <div className="flex items-baseline gap-2">
@@ -170,9 +170,9 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <div className="flex items-center border border-white/10 rounded-xl overflow-hidden">
-                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5"><FiMinus /></button>
+                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5"><FiMinus /></button>
                   <span className="w-10 text-center text-sm font-bold text-white">{quantity}</span>
-                  <button onClick={() => setQuantity((q) => q + 1)} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5"><FiPlus /></button>
+                  <button onClick={() => setQuantity((q) => q + 1)} className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5"><FiPlus /></button>
                 </div>
               </div>
               
@@ -190,7 +190,7 @@ const ProductDetail = () => {
                   image: product.image || product.image_url || '', 
                   product_id: product.id 
                 });
-              }} className="w-full mt-5 bg-button hover:bg-button/90 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2">
+              }} className="w-full mt-5 bg-button hover:bg-button/90 text-white font-bold py-3 md:py-3.5 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2">
                 <FiShoppingCart className="w-5 h-5" /> افزودن به سبد خرید
               </button>
             </div>
@@ -199,7 +199,7 @@ const ProductDetail = () => {
       </main>
 
       {/* --- REVIEWS SECTION --- */}
-      <section className="max-w-[1240px] mx-auto px-4 py-8 border-t border-white/10 mt-8">
+      <section className="max-w-[1240px] mx-auto px-4 py-6 md:py-8 border-t border-white/10 mt-6 md:mt-8">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <h2 className="text-2xl font-bold text-white">نظرات کاربران</h2>
           <div className="flex items-center gap-3 bg-white/[0.035] border border-white/10 rounded-xl px-4 py-2">
@@ -214,7 +214,7 @@ const ProductDetail = () => {
         </div>
         
         {/* Submit Review Form */}
-        <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-6 mb-8">
+        <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
           <h3 className="text-lg font-bold text-white mb-4">ثبت نظر جدید</h3>
           <div className="flex items-center gap-2 mb-4">
             <span className="text-sm text-gray-400">امتیاز شما:</span>
@@ -272,7 +272,7 @@ const ProductDetail = () => {
             <p className="text-gray-500 text-center py-8">هنوز نظری برای این محصول ثبت نشده است.</p>
           ) : (
             reviews.map((review) => (
-              <div key={review.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-5">
+              <div key={review.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 md:p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <StarRating filled={review.rating} size="w-3 h-3" />

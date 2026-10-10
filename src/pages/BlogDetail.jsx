@@ -40,23 +40,23 @@ const BlogDetail = () => {
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
       <Header />
-      <main className="flex-1 max-w-[800px] w-full mx-auto px-6 py-12">
-        <button onClick={() => navigate('/blog')} className="mb-6 text-primary hover:underline flex items-center gap-2 text-sm font-bold">
+      <main className="flex-1 max-w-[800px] w-full mx-auto px-4 md:px-6 py-8 md:py-12">
+        <button onClick={() => navigate('/blog')} className="mb-4 md:mb-6 text-primary hover:underline flex items-center gap-2 text-sm font-bold">
           → بازگشت به لیست بلاگ‌ها
         </button>
         
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">{blog.title}</h1>
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4 leading-tight">{blog.title}</h1>
         <div className="text-sm text-gray-400 mb-8 border-b border-white/10 pb-4">
           {new Date(blog.created_at).toLocaleDateString('fa-IR')}
         </div>
         
         {imageUrl && (
-          <div className="w-full h-[300px] md:h-[400px] rounded-2xl overflow-hidden mb-8 bg-gray-800 shadow-2xl">
+          <div className="w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden mb-6 md:mb-8 bg-gray-800 shadow-2xl">
             <img src={imageUrl} alt={blog.title} className="w-full h-full object-cover" />
           </div>
         )}
         
-        <div className="text-gray-300 leading-loose text-base md:text-lg whitespace-pre-wrap">
+        <div className="text-gray-300 leading-relaxed md:leading-loose text-sm md:text-base lg:text-lg whitespace-pre-wrap">
           {blog.content}
         </div>
       </main>
