@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 // src/pages/Admin.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar } from 'react-icons/fi';
 
@@ -43,6 +43,8 @@ const Admin = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const [productTab, setProductTab] = useState('base');
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+  const imageUrlRef = useRef('');
   const [productForm, setProductForm] = useState({
     title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '',
     attributes: [{ name: '', values: [''] }],
@@ -143,17 +145,25 @@ const Admin = () => {
   };
 
   const handleCreateOrUpdateProduct = async () => {
+    if (uploadingImage) {
+      toast.error('لطفاً صبر کنید تا آپلود تصویر تکمیل شود...');
+      return;
+    }
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     try {
       let productId = editingProduct ? editingProduct.id : null;
 
       if (!editingProduct) {
+        console.log("📤 Sending product data:", {
+          title: productForm.title,
+          image_url: productForm.image_url
+        });
         const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { 
           method: 'POST', headers, 
           body: JSON.stringify({ 
             title: productForm.title, title_en: productForm.title_en, 
-            description: productForm.description, image_url: productForm.image_url,
+            description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
             brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
             category_id: productForm.category_id ? parseInt(productForm.category_id) : null
           }) 
@@ -166,7 +176,7 @@ const Admin = () => {
           method: 'PUT', headers,
           body: JSON.stringify({
             title: productForm.title, title_en: productForm.title_en,
-            description: productForm.description, image_url: productForm.image_url,
+            description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
             brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
             category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
             attributes: productForm.attributes.map(a => ({
@@ -224,9 +234,19 @@ const Admin = () => {
       toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
       setIsAddProductOpen(false);
       setEditingProduct(null);
+      setUploadedImageUrl('');
+      imageUrlRef.current = '';
       setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }] });
+      // Force a complete refresh of the product list
       const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
-      if (resList.ok) setProductsList(await resList.json());
+      if (resList.ok) {
+        const dataList = await resList.json();
+        const items = Array.isArray(dataList) ? dataList : (dataList.items || []);
+        console.log("🔄 Refreshing product list, found", items.length, "products");
+        console.log("🖼️ Product images:", items.map(p => ({ id: p.id, title: p.title, image_url: p.image_url })));
+        setProductsList(items);
+        setTotalPages(dataList.total_pages || 1);
+      }
     } catch (error) {
       console.error(error);
       toast.error('خطای شبکه: ' + error.message);
@@ -248,7 +268,10 @@ const Admin = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        setUrlFunc(data.url); // Updates the image_url state
+        console.log("✅ Image uploaded, URL:", data.url);
+        imageUrlRef.current = data.url; // ✅ SYNC IMMEDIATE FIX
+        setUploadedImageUrl(data.url);
+        setUrlFunc(data.url);
         toast.success('تصویر با موفقیت آپلود شد');
       } else {
         toast.error('خطا در آپلود تصویر');
@@ -538,7 +561,7 @@ const Admin = () => {
       });
       if (res.ok) {
         const res2 = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (res2.ok) setProductsList(await res2.json());
+        if (res2.ok) { const data2 = await res2.json(); setProductsList(Array.isArray(data2) ? data2 : (data2.items || [])); setTotalPages(data2.total_pages || 1); }
       }
     } catch (error) { toast.error('خطای شبکه'); }
   };
@@ -572,7 +595,7 @@ const Admin = () => {
     { id: 'bank-info', label: 'اطلاعات بانکی', icon: FiCreditCard },
   ];
 
-  const filteredProducts = productsList.filter(p => {
+  const filteredProducts = (Array.isArray(productsList) ? productsList : []).filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(productSearch.toLowerCase()) || (p.title_en && p.title_en.toLowerCase().includes(productSearch.toLowerCase()));
     return showDeactivatedOnly ? (matchesSearch && p.is_active === false) : matchesSearch;
   });
@@ -684,7 +707,9 @@ const Admin = () => {
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
                   <button onClick={() => { 
                     setEditingProduct(null); 
-                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }] }); 
+                    setUploadedImageUrl('');
+      imageUrlRef.current = '';
+      setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [] }] }); 
                     setIsAddProductOpen(true); 
                     setProductTab('base'); 
                   }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
@@ -703,6 +728,14 @@ const Admin = () => {
                   <div key={p.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-bold text-gray-500 w-6 text-center bg-white/5 rounded-full py-1">{index + 1}</span>
+                      {p.image_url && (
+                        <img 
+                          src={p.image_url.startsWith('http') ? p.image_url : `http://127.0.0.1:8000${p.image_url}`} 
+                          alt={p.title} 
+                          className="w-12 h-12 rounded-lg object-cover bg-white/5"
+                          onError={(e) => { e.target.src = '/category-img.png'; }}
+                        />
+                      )}
                       <div>
                         <h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3>
                       <p className="text-xs text-gray-400">{p.title_en}</p>
@@ -947,7 +980,7 @@ const Admin = () => {
                       <p className="text-xs text-gray-400">{newBlog.image_url ? 'تصویر انتخاب شد' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>
                       {newBlog.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{newBlog.image_url}</p>}
                     </div>
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog({...newBlog, image_url: url})); e.target.value = ''; }} disabled={uploadingImage} />
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog(prev => ({...prev, image_url: url}))); e.target.value = ''; }} disabled={uploadingImage} />
                   </label>
                   {uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}
                 </div>
@@ -1004,13 +1037,13 @@ const Admin = () => {
                 <div className="flex-1 overflow-y-auto pr-2 mb-6">
                   {productTab === 'base' && (
                     <div className="space-y-4">
-                      <input type="text" placeholder="نام محصول" value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                      <input type="text" placeholder="نام محصول (انگلیسی)" value={productForm.title_en} onChange={e => setProductForm({...productForm, title_en: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
-                      <select value={productForm.category_id} onChange={e => setProductForm({...productForm, category_id: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4">
+                      <input type="text" placeholder="نام محصول" value={productForm.title} onChange={e => setProductForm(prev => ({...prev, title: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+                      <input type="text" placeholder="نام محصول (انگلیسی)" value={productForm.title_en} onChange={e => setProductForm(prev => ({...prev, title_en: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
+                      <select value={productForm.category_id} onChange={e => setProductForm(prev => ({...prev, category_id: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4">
                         <option value="">انتخاب دسته‌بندی (اختیاری)</option>
                         {categories.map(c => <option key={c.id} value={c.id} className="text-black">{c.name}</option>)}
                       </select>
-                      <select value={productForm.brand_id} onChange={e => setProductForm({...productForm, brand_id: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none">
+                      <select value={productForm.brand_id} onChange={e => setProductForm(prev => ({...prev, brand_id: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none">
                         <option value="">انتخاب برند (اختیاری)</option>
                         {brands.map(b => <option key={b.id} value={b.id} className="text-black">{b.name}</option>)}
                       </select>
@@ -1021,11 +1054,11 @@ const Admin = () => {
                             <p className="text-xs text-gray-400">{productForm.image_url ? 'تصویر انتخاب شد (برای تغییر کلیک کنید)' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>
                             {productForm.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{productForm.image_url}</p>}
                           </div>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], (url) => setProductForm({...productForm, image_url: url}))} disabled={uploadingImage} />
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], (url) => setProductForm(prev => ({...prev, image_url: url})))} disabled={uploadingImage} />
                         </label>
                         {uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}
                       </div>
-                      <textarea placeholder="توضیحات" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" />
+                      <textarea placeholder="توضیحات" value={productForm.description} onChange={e => setProductForm(prev => ({...prev, description: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" />
                     </div>
                   )}
 
@@ -1036,20 +1069,20 @@ const Admin = () => {
                           <input type="text" placeholder="نام ویژگی" value={attr.name} onChange={e => {
                             const newAttrs = [...productForm.attributes];
                             newAttrs[attrIndex].name = e.target.value;
-                            setProductForm({...productForm, attributes: newAttrs});
+                            setProductForm(prev => ({...prev, attributes: newAttrs}));
                           }} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                           <div className="flex flex-wrap gap-2">
                             {attr.values.map((val, valIndex) => (
                               <input key={valIndex} type="text" placeholder="مقدار" value={val} onChange={e => {
                                 const newAttrs = [...productForm.attributes];
                                 newAttrs[attrIndex].values[valIndex] = e.target.value;
-                                setProductForm({...productForm, attributes: newAttrs});
+                                setProductForm(prev => ({...prev, attributes: newAttrs}));
                               }} className="flex-1 min-w-[100px] bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none" dir="ltr" />
                             ))}
                             <button onClick={() => {
                               const newAttrs = [...productForm.attributes];
                               newAttrs[attrIndex].values.push('');
-                              setProductForm({...productForm, attributes: newAttrs});
+                              setProductForm(prev => ({...prev, attributes: newAttrs}));
                             }} className="bg-green-500/20 text-green-400 px-3 rounded-lg text-xs hover:bg-green-500/30">+ مقدار</button>
                           </div>
                         </div>
@@ -1067,7 +1100,7 @@ const Admin = () => {
                             {productForm.variants.length > 1 && (
                               <button onClick={() => {
                                 const newVariants = productForm.variants.filter((_, i) => i !== vIdx);
-                                setProductForm({...productForm, variants: newVariants});
+                                setProductForm(prev => ({...prev, variants: newVariants}));
                               }} className="text-red-400 hover:text-red-300"><FiTrash2 /></button>
                             )}
                           </div>
@@ -1081,7 +1114,7 @@ const Admin = () => {
                                     const newVariants = [...productForm.variants];
                                     const currentIds = newVariants[vIdx].selectedValueIds;
                                     newVariants[vIdx].selectedValueIds = isSelected ? currentIds.filter(id => id !== av.id) : [...currentIds, av.id];
-                                    setProductForm({...productForm, variants: newVariants});
+                                    setProductForm(prev => ({...prev, variants: newVariants}));
                                   }} className={`px-3 py-1 rounded-lg text-xs transition ${isSelected ? 'bg-primary text-white' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}>
                                     {av.label}
                                   </button>
@@ -1092,29 +1125,29 @@ const Admin = () => {
                           <div className="grid grid-cols-2 gap-3 mb-3">
                               <div>
                                 <label className="block text-xs text-gray-400 mb-1">قیمت کاربر عادی</label>
-                                <input type="number" placeholder="تومان" value={variant.price_normal} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_normal = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                                <input type="number" placeholder="تومان" value={variant.price_normal} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_normal = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                               </div>
                               <div>
                                 <label className="block text-xs text-gray-400 mb-1">قیمت ویزیتور</label>
-                                <input type="number" placeholder="تومان" value={variant.price_visitor} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_visitor = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                                <input type="number" placeholder="تومان" value={variant.price_visitor} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_visitor = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                               </div>
                               <div>
                                 <label className="block text-xs text-gray-400 mb-1">قیمت مغازه‌دار</label>
-                                <input type="number" placeholder="تومان" value={variant.price_shop_owner} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_shop_owner = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                                <input type="number" placeholder="تومان" value={variant.price_shop_owner} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_shop_owner = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                               </div>
                               <div>
                                 <label className="block text-xs text-gray-400 mb-1">قیمت عمده‌فروش</label>
-                                <input type="number" placeholder="تومان" value={variant.price_wholesale} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_wholesale = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                                <input type="number" placeholder="تومان" value={variant.price_wholesale} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_wholesale = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                               </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs text-gray-400 mb-1">درصد تخفیف (%)</label>
-                                <input type="number" min="0" max="100" placeholder="مثال: 20" value={variant.discount_percent} onChange={e => { const n = [...productForm.variants]; n[vIdx].discount_percent = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                                <input type="number" min="0" max="100" placeholder="مثال: 20" value={variant.discount_percent} onChange={e => { const n = [...productForm.variants]; n[vIdx].discount_percent = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                               </div>
                               <div>
                                 <label className="block text-xs text-gray-400 mb-1">موجودی انبار</label>
-                                <input type="number" placeholder="موجودی" value={variant.stock_quantity} onChange={e => { const n = [...productForm.variants]; n[vIdx].stock_quantity = e.target.value; setProductForm({...productForm, variants: n}); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
+                                <input type="number" placeholder="موجودی" value={variant.stock_quantity} onChange={e => { const n = [...productForm.variants]; n[vIdx].stock_quantity = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
                               </div>
                             </div>
                         </div>
@@ -1135,8 +1168,12 @@ const Admin = () => {
                   </button>
                   
                   {productTab === 'variants' || editingProduct ? (
-                    <button onClick={handleCreateOrUpdateProduct} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2">
-                      <FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}
+                    <button 
+                      onClick={handleCreateOrUpdateProduct} 
+                      disabled={uploadingImage}
+                      className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {uploadingImage ? 'در حال آپلود...' : <><FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}</>}
                     </button>
                   ) : (
                     <button onClick={() => {
