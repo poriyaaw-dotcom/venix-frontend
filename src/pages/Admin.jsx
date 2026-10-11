@@ -192,7 +192,7 @@ const Admin = () => {
               price_wholesale: parseFloat(v.price_wholesale) || 0,
               discount_percent: parseInt(v.discount_percent) || 0,
               stock_quantity: parseInt(v.stock_quantity) || 0,
-              selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
+              attribute_value_ids: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
             }))
           })
         });
@@ -333,13 +333,13 @@ const Admin = () => {
             ? data.variants.map(v => ({
                 id: v.id,
                 sku: v.sku || '',
-                price_normal: String(v.price_normal || ''),
+                price_normal: String(v.price_normal || v.base_price || ''),
                 price_visitor: String(v.price_visitor || ''),
                 price_shop_owner: String(v.price_shop_owner || ''),
                 price_wholesale: String(v.price_wholesale || ''),
                 discount_percent: String(v.discount_percent || ''),
                 stock_quantity: String(v.stock_quantity || ''),
-                selectedValueIds: v.selectedValueIds || []
+                selectedValueIds: v.attribute_value_ids || v.selectedValueIds || []
               }))
             : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', stock_quantity: '', selectedValueIds: [] }]
         });

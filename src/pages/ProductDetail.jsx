@@ -23,6 +23,7 @@ const ProductDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -49,6 +50,12 @@ const ProductDetail = () => {
     loadReviews();
   }, [id]);
 
+  useEffect(() => {
+    if (product && product.variants && product.variants.length > 0) {
+      setSelectedVariantId(product.variants[0].id);
+    }
+  }, [product]);
+
   if (loading) return <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center px-4"><span className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></span></div>;
   if (!product) return (
     <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -60,8 +67,9 @@ const ProductDetail = () => {
     </div>
   );
 
-  const hasDiscount = product.discount > 0;
-  const price = hasDiscount ? product.discountPrice : product.price;
+  const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
+  const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.price_normal || product.price) : product.price;
+  const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
   
   // ✅ Safe brand extraction
   const brandName = product.brand || product.brand_name || null;
@@ -132,26 +140,43 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* ✅ Variants Display */}
+            {/* ✅ Clickable Variants Display */}
             {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
               <div className="mt-6 md:mt-8">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <FiShoppingCart className="text-primary" /> واریانت‌های موجود
+                  <FiShoppingCart className="text-primary" /> انتخاب واریانت
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {product.variants.map((variant, idx) => (
-                    <div key={variant.id} className="bg-white/[0.035] border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                      <div>
-                        <div className="text-white font-bold text-sm">
-                          {variant.attributes && variant.attributes.length > 0 
-                            ? variant.attributes.map(a => `${a.name}: ${a.value}`).join(' | ') 
-                            : `واریانت #${idx + 1}`}
+                  {product.variants.map((variant) => {
+                    // Safely extract attribute names/values
+                    const attrLabel = (variant.attributes || variant.attribute_values || [])
+                      .map(a => a.value || a.name || 'ویژگی')
+                      .join(' - ') || `واریانت ${variant.sku || variant.id}`;
+                    
+                    const isSelected = selectedVariantId === variant.id;
+
+                    return (
+                      <div 
+                        key={variant.id} 
+                        onClick={() => setSelectedVariantId(variant.id)}
+                        className={`cursor-pointer transition-all duration-200 rounded-xl p-4 flex justify-between items-center border ${
+                          isSelected 
+                            ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10' 
+                            : 'bg-white/[0.035] border-white/10 hover:border-white/30'
+                        }`}
+                      >
+                        <div>
+                          <div className={`font-bold text-sm ${isSelected ? 'text-primary' : 'text-white'}`}>
+                            {attrLabel}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">موجودی: {variant.stock_quantity !== null ? variant.stock_quantity : 'نامحدود'}</div>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">موجودی: {variant.stock_quantity !== null ? variant.stock_quantity : 'نامحدود'}</div>
+                        <div className={`font-black text-lg ${isSelected ? 'text-primary' : 'text-gray-300'}`}>
+                          {formatPrice(variant.final_price || variant.price_normal)} <span className="text-xs font-normal text-gray-400">تومان</span>
+                        </div>
                       </div>
-                      <div className="text-primary font-black text-lg">{formatPrice(variant.final_price)} <span className="text-xs font-normal text-gray-400">تومان</span></div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -163,9 +188,9 @@ const ProductDetail = () => {
             <div className="mt-5 bg-white/[0.035] border border-white/10 rounded-2xl p-5">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                  {hasDiscount && <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(product.price)} تومان</div>}
+                  {hasDiscount && selectedVariant && selectedVariant.price_normal && <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(selectedVariant.price_normal)} تومان</div>}
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-white">{formatPrice(price)}</span>
+                    <span className="text-3xl font-black text-white">{formatPrice(displayPrice)}</span>
                     <span className="text-xs text-gray-500">تومان</span>
                   </div>
                 </div>
@@ -178,9 +203,7 @@ const ProductDetail = () => {
               
               {/* ✅ FIXED: Add to Cart Button using variant_id */}
               <button onClick={() => {
-                const targetVariantId = product.variants && product.variants.length > 0 
-                  ? product.variants[0].id 
-                  : product.id;
+                const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
                 addToCart(targetVariantId, quantity, { 
                   title: product.title, 
                   titleEn: product.titleEn || '', 
