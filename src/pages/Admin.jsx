@@ -45,10 +45,11 @@ const Admin = () => {
   const [productTab, setProductTab] = useState('base');
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
   const imageUrlRef = useRef('');
+  
   const [productForm, setProductForm] = useState({
     title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '',
-    attributes: [{ name: '', values: [''] }],
-    variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]
+    variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
+    specifications: [''] // ✅ NEW: Dynamic specifications list
   });
 
   useEffect(() => {
@@ -153,6 +154,9 @@ const Admin = () => {
     try {
       let productId = editingProduct ? editingProduct.id : null;
 
+      // Filter out empty specifications
+      const cleanSpecs = productForm.specifications.filter(s => s.trim() !== '');
+
       if (!editingProduct) {
         const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { 
           method: 'POST', headers, 
@@ -160,7 +164,8 @@ const Admin = () => {
             title: productForm.title, title_en: productForm.title_en, 
             description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
             brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
-            category_id: productForm.category_id ? parseInt(productForm.category_id) : null
+            category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
+            specifications: cleanSpecs // ✅ Send specifications
           }) 
         });
         if (!res1.ok) throw new Error('خطا در ایجاد محصول');
@@ -174,10 +179,7 @@ const Admin = () => {
             description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
             brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
             category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
-            attributes: productForm.attributes.map(a => ({
-              name: a.name,
-              values: a.values.filter(v => v)
-            })),
+            specifications: cleanSpecs, // ✅ Send specifications
             variants: productForm.variants.map(v => ({
               id: v.id,
               sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
@@ -187,26 +189,15 @@ const Admin = () => {
               price_wholesale: parseFloat(v.price_wholesale) || 0,
               discount_percent: parseInt(v.discount_percent) || 0,
               stock_quantity: parseInt(v.stock_quantity) || 0,
-              attribute_value_ids: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string'),
-              attributes_text: v.attributes_text || '' // ✅ ADDED
+              attributes_text: v.attributes_text || '',
+              selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
             }))
           })
         });
       }
 
+      // If creating new product, add variants separately
       if (!editingProduct && productId) {
-        for (const attr of productForm.attributes) {
-          if (!attr.name) continue;
-          const resAttr = await fetch(`${API_BASE_URL}/admin/products/${productId}/attributes`, { method: 'POST', headers, body: JSON.stringify({ name: attr.name }) });
-          if (resAttr.ok) {
-            const attrData = await resAttr.json();
-            for (const val of attr.values) {
-              if (!val) continue;
-              await fetch(`${API_BASE_URL}/admin/products/attributes/${attrData.id}/values`, { method: 'POST', headers, body: JSON.stringify({ value: val }) });
-            }
-          }
-        }
-
         for (const variant of productForm.variants) {
           if (!variant.price_normal && !variant.stock_quantity) continue;
           const validSelectedIds = variant.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string');
@@ -221,8 +212,8 @@ const Admin = () => {
               price_wholesale: parseFloat(variant.price_wholesale) || 0,
               discount_percent: parseInt(variant.discount_percent) || 0,
               stock_quantity: parseInt(variant.stock_quantity) || 0, 
-              attribute_value_ids: validSelectedIds,
-              attributes_text: variant.attributes_text || '' // ✅ ADDED
+              attributes_text: variant.attributes_text || '',
+              attribute_value_ids: validSelectedIds
             })
           });
         }
@@ -233,7 +224,11 @@ const Admin = () => {
       setEditingProduct(null);
       setUploadedImageUrl('');
       imageUrlRef.current = '';
-      setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }] });
+      setProductForm({ 
+        title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', 
+        variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
+        specifications: [''] 
+      });
       
       const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
       if (resList.ok) {
@@ -320,9 +315,8 @@ const Admin = () => {
           image_url: data.image_url || '',
           brand_id: data.brand_id ? String(data.brand_id) : '',
           category_id: data.category_id ? String(data.category_id) : '',
-          attributes: data.attributes && data.attributes.length > 0 
-            ? data.attributes 
-            : [{ name: '', values: [''] }],
+          // ✅ Load specifications
+          specifications: data.specifications && data.specifications.length > 0 ? data.specifications : [''],
           variants: data.variants && data.variants.length > 0 
             ? data.variants.map(v => ({
                 id: v.id,
@@ -334,7 +328,7 @@ const Admin = () => {
                 discount_percent: String(v.discount_percent || ''),
                 stock_quantity: String(v.stock_quantity || ''),
                 selectedValueIds: v.attribute_value_ids || v.selectedValueIds || [],
-                attributes_text: v.attributes_text || '' // ✅ ADDED
+                attributes_text: v.attributes_text || ''
               }))
             : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]
         });
@@ -611,9 +605,6 @@ const Admin = () => {
         </aside>
 
         <div className="flex-1 bg-white/[0.035] border border-white/10 rounded-2xl p-6 min-h-[600px] relative">
-          {/* Dashboard, Categories, Brands, Products, Orders, Customers, Bank Info, Logs, Reviews, Blogs tabs remain exactly as they were... */}
-          {/* For brevity, I am keeping the structure identical to your original file, but fixing ONLY the Add/Edit Product Modal below */}
-          
           {activeTab === 'dashboard' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">داشبورد مدیریت</h1>
@@ -698,7 +689,7 @@ const Admin = () => {
                     setEditingProduct(null); 
                     setUploadedImageUrl('');
                     imageUrlRef.current = '';
-                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', attributes: [{ name: '', values: [''] }], variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }] }); 
+                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); 
                     setIsAddProductOpen(true); 
                     setProductTab('base'); 
                   }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
@@ -789,7 +780,7 @@ const Admin = () => {
                       <h3 className="font-bold text-white">{req.business_name}</h3>
                       <p className="text-sm text-gray-400">{req.description}</p>
                       <div className="mt-2 flex gap-3 text-xs">
-                        <span className="bg-white/10 px-2 py-1 rounded text-primary">📞 {req.user?.phone_number || 'N/A'}</span>
+                        <span className="bg-white/10 px-2 py-1 rounded text-primary"> {req.user?.phone_number || 'N/A'}</span>
                         <span className="bg-white/10 px-2 py-1 rounded text-gray-300">👤 {req.user?.full_name || 'بدون نام'}</span>
                       </div>
                     </div>
@@ -975,7 +966,7 @@ const Admin = () => {
 
                 <div className="flex border-b border-white/10 mb-6">
                   <button onClick={() => setProductTab('base')} className={`py-3 px-6 font-bold transition ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button>
-                  <button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. ویژگی‌ها و مشخصات</button>
+                  <button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. مشخصات فنی</button>
                   <button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button>
                 </div>
 
@@ -1007,36 +998,48 @@ const Admin = () => {
                     </div>
                   )}
 
+                  {/* ✅ NEW: Dynamic Specifications Tab */}
                   {productTab === 'attrs' && (
                     <div className="space-y-4">
-                      {productForm.attributes.map((attr, attrIndex) => (
-                        <div key={attrIndex} className="bg-white/5 rounded-xl p-4 border border-white/5 space-y-3">
-                          <input type="text" placeholder="نام ویژگی" value={attr.name} onChange={e => {
-                            const newAttrs = [...productForm.attributes];
-                            newAttrs[attrIndex].name = e.target.value;
-                            setProductForm(prev => ({...prev, attributes: newAttrs}));
-                          }} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                          <div className="flex flex-wrap gap-2">
-                            {attr.values.map((val, valIndex) => (
-                              <input key={valIndex} type="text" placeholder="مقدار" value={val} onChange={e => {
-                                const newAttrs = [...productForm.attributes];
-                                newAttrs[attrIndex].values[valIndex] = e.target.value;
-                                setProductForm(prev => ({...prev, attributes: newAttrs}));
-                              }} className="flex-1 min-w-[100px] bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none" dir="ltr" />
-                            ))}
-                            <button onClick={() => {
-                              const newAttrs = [...productForm.attributes];
-                              newAttrs[attrIndex].values.push('');
-                              setProductForm(prev => ({...prev, attributes: newAttrs}));
-                            }} className="bg-green-500/20 text-green-400 px-3 rounded-lg text-xs hover:bg-green-500/30">+ مقدار</button>
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+                        <h4 className="text-sm font-bold text-primary mb-4">مشخصات فنی محصول (نامحدود)</h4>
+                        <p className="text-xs text-gray-400 mb-4">هر مشخصه را در یک خط جداگانه وارد کنید (مثال: باتری 20000 میلی‌آمپر)</p>
+                        
+                        {productForm.specifications.map((spec, index) => (
+                          <div key={index} className="flex gap-2 mb-2">
+                            <input 
+                              type="text" 
+                              value={spec} 
+                              onChange={(e) => {
+                                const newSpecs = [...productForm.specifications];
+                                newSpecs[index] = e.target.value;
+                                setProductForm(prev => ({...prev, specifications: newSpecs}));
+                              }}
+                              className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary"
+                              placeholder={`مشخصه ${index + 1}...`}
+                            />
+                            <button 
+                              onClick={() => {
+                                const newSpecs = productForm.specifications.filter((_, i) => i !== index);
+                                setProductForm(prev => ({...prev, specifications: newSpecs}));
+                              }}
+                              className="text-red-400 hover:text-red-300 px-3"
+                            >
+                              <FiTrash2 />
+                            </button>
                           </div>
-                        </div>
-                      ))}
-                      <button onClick={() => setProductForm(prev => ({...prev, attributes: [...prev.attributes, { name: '', values: [''] }]}))} className="text-sm text-primary hover:underline">+ افزودن ویژگی جدید</button>
+                        ))}
+                        
+                        <button 
+                          onClick={() => setProductForm(prev => ({...prev, specifications: [...prev.specifications, '']}))}
+                          className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"
+                        >
+                          <FiPlus /> افزودن مشخصه جدید
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* ✅ CLEANED UP VARIANTS TAB: NO DUPLICATES */}
                   {productTab === 'variants' && (
                     <div className="space-y-4">
                       {productForm.variants.map((variant, vIdx) => (
@@ -1051,7 +1054,6 @@ const Admin = () => {
                             )}
                           </div>
                           
-                          {/* ✅ SINGLE, CLEAN ATTRIBUTE TEXT INPUT */}
                           <div>
                             <label className="text-xs text-gray-400 block mb-1">ویژگی‌های این واریانت (مثال: قرمز، 500ml)</label>
                             <input 

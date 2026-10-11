@@ -2,7 +2,7 @@
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 
-// Helper to format prices with Persian numbers and separators (e.g., ۶٬۰۰۰۰۰۰)
+// Helper to format prices with Persian numbers and separators (e.g., ۶۰۰۰۰۰)
 export const formatPrice = (price) => {
   if (!price) return '۰';
   return new Intl.NumberFormat('fa-IR').format(price);
@@ -10,7 +10,7 @@ export const formatPrice = (price) => {
 
 // Helper to convert English numbers to Persian
 export const toFarsiNumber = (n) => {
-  const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  const farsiDigits = ['', '۱', '۲', '', '۴', '۵', '', '۷', '۸', ''];
   return n.toString().replace(/\d/g, x => farsiDigits[x]);
 };
 
@@ -30,20 +30,20 @@ export const fetchProducts = async () => {
     const productsArray = Array.isArray(data) ? data : (data.items || []);
 
     return productsArray.map(product => {
-          // Extract unique attributes from all variants
-    const attrMap = {};
-    (product.variants || []).forEach(v => {
-      (v.attributes || []).forEach(a => {
-        if (!attrMap[a.name]) attrMap[a.name] = new Set();
-        attrMap[a.name].add(a.value);
+      // Extract unique attributes from all variants
+      const attrMap = {};
+      (product.variants || []).forEach(v => {
+        (v.attributes || []).forEach(a => {
+          if (!attrMap[a.name]) attrMap[a.name] = new Set();
+          attrMap[a.name].add(a.value);
+        });
       });
-    });
-    const formattedAttributes = Object.entries(attrMap).map(([name, values]) => ({
-      name,
-      values: Array.from(values).map(v => ({ value: v }))
-    }));
+      const formattedAttributes = Object.entries(attrMap).map(([name, values]) => ({
+        name,
+        values: Array.from(values).map(v => ({ value: v }))
+      }));
 
-    const firstVariant = product.variants?.[0] || {};
+      const firstVariant = product.variants?.[0] || {};
       // ✅ FIX: Changed purchase_cost to final_price
       const price = firstVariant.final_price || 0; 
       
@@ -106,7 +106,8 @@ export const fetchProductById = async (id) => {
       attributes: formattedAttributes,
       average_rating: product.average_rating || 0,
       review_count: product.review_count || 0,
-      variants: product.variants || []
+      variants: product.variants || [],
+      specifications: product.specifications || [], // ✅ ONLY THIS LINE WAS ADDED!
     };
   } catch (error) {
     console.error("Error fetching product:", error);

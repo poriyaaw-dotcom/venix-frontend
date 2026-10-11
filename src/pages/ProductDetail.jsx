@@ -17,7 +17,6 @@ const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('description');
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState([]);
@@ -30,6 +29,8 @@ const ProductDetail = () => {
     const loadProduct = async () => {
       setLoading(true);
       const data = await fetchProductById(id);
+      console.log("🔥 FULL PRODUCT DATA FROM BACKEND:", data);
+      console.log("🔥 SPECIFICATIONS DATA:", data.specifications);
       setProduct(data);
       setLoading(false);
     };
@@ -70,7 +71,6 @@ const ProductDetail = () => {
   const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
   const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.price_normal || product.price) : product.price;
   const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
-  
   const brandName = product.brand || product.brand_name || null;
 
   return (
@@ -85,8 +85,11 @@ const ProductDetail = () => {
           <span className="text-gray-300 truncate max-w-[220px]">{product.title}</span>
         </div>
       </div>
+      
       <main className="max-w-[1240px] mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 md:gap-8">
+          
+          {/* Image Section */}
           <div className="relative">
             <div className="bg-[#FDF8E8]/[0.035] border border-white/10 rounded-[20px] md:rounded-[28px] p-4 md:p-5 relative">
               <button onClick={() => setIsFavorite(!isFavorite)} className={`absolute top-8 right-8 z-10 w-11 h-11 rounded-full flex items-center justify-center border transition ${isFavorite ? 'bg-primary/15 border-primary text-primary' : 'bg-black/20 border-white/10 text-gray-400 hover:text-primary'}`}>
@@ -106,6 +109,8 @@ const ProductDetail = () => {
               ))}
             </div>
           </div>
+
+          {/* Details Section */}
           <div className="flex flex-col">
             {brandName && (
               <span className="inline-block bg-white/10 text-primary text-xs px-3 py-1 rounded-full font-bold mb-2 w-fit">
@@ -114,31 +119,9 @@ const ProductDetail = () => {
             )}
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white leading-tight">{product.title}</h1>
             <p dir="ltr" className="text-sm text-gray-500 mt-2 text-right">{product.titleEn}</p>
-
             <p className="text-sm text-gray-400 leading-7 mt-6">{product.description}</p>
             
-            {/* ✅ Safe Attributes Display */}
-            {product.attributes && Array.isArray(product.attributes) && product.attributes.length > 0 && (
-              <div className="mt-6 md:mt-8">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <FiSettings className="text-primary" /> ویژگی‌ها و مشخصات
-                </h3>
-                <div className="bg-white/[0.035] border border-white/10 rounded-2xl overflow-hidden">
-                  {product.attributes.map((attr, idx) => (
-                    <div key={attr.id || idx} className={`flex justify-between p-4 ${idx !== product.attributes.length - 1 ? 'border-b border-white/5' : ''}`}>
-                      <span className="text-gray-400 text-sm">{attr.name}</span>
-                      <span className="text-white text-sm font-medium text-left" dir="ltr">
-                        {attr.values && Array.isArray(attr.values) && attr.values.length > 0
-                          ? attr.values.map(v => v.value).join('، ') 
-                          : 'نامشخص'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ✅ Clickable Variants Display (FIXED: Only shows admin text + price, NO stock text) */}
+            {/* ✅ Clickable Variants Display */}
             {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
               <div className="mt-6 md:mt-8">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -146,7 +129,6 @@ const ProductDetail = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {product.variants.map((variant) => {
-                    // ✅ ONLY show the exact text the admin typed (e.g., "قرمز", "آبی")
                     const variantName = variant.attributes_text || 'واریانت';
                     const isSelected = selectedVariantId === variant.id;
 
@@ -213,6 +195,42 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* ✅ NEW: Specifications Section (2-Column Grid) */}
+      {product.specifications && Array.isArray(product.specifications) && product.specifications.length > 0 && (
+        <section className="max-w-[1240px] mx-auto px-4 py-8 border-t border-white/10">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <FiSettings className="text-primary" /> مشخصات فنی
+          </h2>
+          <div className="rounded-xl overflow-hidden border border-white/10">
+            {Array.from({ length: Math.ceil(product.specifications.length / 2) }).map((_, rowIndex) => {
+              const start = rowIndex * 2;
+              const end = start + 2;
+              const rowSpecs = product.specifications.slice(start, end);
+              return (
+                <div 
+                  key={rowIndex} 
+                  className={`flex border-b border-white/5 last:border-b-0 ${
+                    rowIndex % 2 === 0 ? 'bg-white/[0.025]' : 'bg-black/20'
+                  }`}
+                >
+                  {rowSpecs.map((spec, colIndex) => (
+                    <div key={colIndex} className="flex-1 p-4 border-l border-white/5 last:border-l-0">
+                      <span className="text-gray-300 text-sm md:text-base font-medium leading-7">
+                        {spec}
+                      </span>
+                    </div>
+                  ))}
+                  {/* Fill empty space if there's an odd number of specs */}
+                  {rowSpecs.length === 1 && (
+                    <div className="flex-1 p-4 border-l border-white/5"></div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* --- REVIEWS SECTION --- */}
       <section className="max-w-[1240px] mx-auto px-4 py-6 md:py-8 border-t border-white/10 mt-6 md:mt-8">
