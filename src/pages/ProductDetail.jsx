@@ -71,7 +71,6 @@ const ProductDetail = () => {
   const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.price_normal || product.price) : product.price;
   const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
   
-  // ✅ Safe brand extraction
   const brandName = product.brand || product.brand_name || null;
 
   return (
@@ -108,7 +107,6 @@ const ProductDetail = () => {
             </div>
           </div>
           <div className="flex flex-col">
-            {/* ✅ Safe Brand Display */}
             {brandName && (
               <span className="inline-block bg-white/10 text-primary text-xs px-3 py-1 rounded-full font-bold mb-2 w-fit">
                 برند: {brandName}
@@ -140,7 +138,7 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* ✅ Clickable Variants Display */}
+            {/* ✅ Clickable Variants Display (FIXED: Only shows admin text + price, NO stock text) */}
             {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
               <div className="mt-6 md:mt-8">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -148,11 +146,8 @@ const ProductDetail = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {product.variants.map((variant) => {
-                    // Safely extract attribute names/values
-                    const attrLabel = (variant.attributes || variant.attribute_values || [])
-                      .map(a => a.value || a.name || 'ویژگی')
-                      .join(' - ') || `واریانت ${variant.sku || variant.id}`;
-                    
+                    // ✅ ONLY show the exact text the admin typed (e.g., "قرمز", "آبی")
+                    const variantName = variant.attributes_text || 'واریانت';
                     const isSelected = selectedVariantId === variant.id;
 
                     return (
@@ -165,13 +160,12 @@ const ProductDetail = () => {
                             : 'bg-white/[0.035] border-white/10 hover:border-white/30'
                         }`}
                       >
-                        <div>
-                          <div className={`font-bold text-sm ${isSelected ? 'text-primary' : 'text-white'}`}>
-                            {attrLabel}
+                        <div className="flex flex-col gap-1">
+                          <div className={`font-bold text-lg ${isSelected ? 'text-primary' : 'text-white'}`}>
+                            {variantName}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">موجودی: {variant.stock_quantity !== null ? variant.stock_quantity : 'نامحدود'}</div>
                         </div>
-                        <div className={`font-black text-lg ${isSelected ? 'text-primary' : 'text-gray-300'}`}>
+                        <div className={`font-black text-xl ${isSelected ? 'text-primary' : 'text-gray-300'}`}>
                           {formatPrice(variant.final_price || variant.price_normal)} <span className="text-xs font-normal text-gray-400">تومان</span>
                         </div>
                       </div>
@@ -201,7 +195,6 @@ const ProductDetail = () => {
                 </div>
               </div>
               
-              {/* ✅ FIXED: Add to Cart Button using variant_id */}
               <button onClick={() => {
                 const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
                 addToCart(targetVariantId, quantity, { 
@@ -236,7 +229,6 @@ const ProductDetail = () => {
           </div>
         </div>
         
-        {/* Submit Review Form */}
         <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
           <h3 className="text-lg font-bold text-white mb-4">ثبت نظر جدید</h3>
           <div className="flex items-center gap-2 mb-4">
@@ -289,7 +281,6 @@ const ProductDetail = () => {
           </button>
         </div>
 
-        {/* Reviews List */}
         <div className="space-y-4">
           {reviews.length === 0 ? (
             <p className="text-gray-500 text-center py-8">هنوز نظری برای این محصول ثبت نشده است.</p>
