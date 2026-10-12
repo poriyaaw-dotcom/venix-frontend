@@ -49,13 +49,22 @@ const Profile = () => {
           setFirstName(names[0] || '');
           setLastName(names.slice(1).join(' ') || '');
 
-          // ✅ FIX: Read from the EXACT SAME key we save to
-          const savedAddresses = localStorage.getItem('venix_user_addresses');
-          if (savedAddresses) {
-            try {
-              setAddresses(JSON.parse(savedAddresses));
-            } catch (e) {
-              console.error("Failed to parse addresses", e);
+          // ✅ ROBUST ADDRESS FIX: Ask the database first, fallback to localStorage
+          try {
+            const addrRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me/addresses', { headers });
+            if (addrRes.ok) {
+              const backendAddresses = await addrRes.json();
+              setAddresses(backendAddresses);
+              // Keep localStorage in sync
+              localStorage.setItem('venix_user_addresses', JSON.stringify(backendAddresses));
+            } else {
+              throw new Error("Backend failed");
+            }
+          } catch (err) {
+            // Fallback to localStorage if backend fails
+            const savedAddresses = localStorage.getItem('venix_user_addresses');
+            if (savedAddresses) {
+              try { setAddresses(JSON.parse(savedAddresses)); } catch (e) {}
             }
           }
         }
@@ -131,7 +140,6 @@ const Profile = () => {
         const savedAddr = await res.json();
         const updatedAddresses = [...addresses, savedAddr];
         setAddresses(updatedAddresses);
-        // ✅ FIX: Save to the EXACT SAME key we read from
         localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
         toast.success('آدرس با موفقیت ذخیره شد');
         setNewAddress({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
@@ -142,7 +150,6 @@ const Profile = () => {
       // Fallback to localStorage if backend endpoint doesn't exist yet
       const updatedAddresses = [...addresses, { ...newAddress, id: Date.now() }];
       setAddresses(updatedAddresses);
-      // ✅ FIX: Save to the EXACT SAME key we read from
       localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
       toast.success('آدرس به صورت محلی ذخیره شد');
       setNewAddress({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
@@ -161,7 +168,6 @@ const Profile = () => {
     }
     const updatedAddresses = addresses.filter(addr => addr.id !== id);
     setAddresses(updatedAddresses);
-    // ✅ FIX: Save to the EXACT SAME key we read from
     localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
     toast.success('آدرس حذف شد');
   };
