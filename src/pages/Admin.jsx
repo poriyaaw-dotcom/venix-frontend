@@ -111,7 +111,6 @@ const Admin = () => {
           const res = await fetch(`${API_BASE_URL}/reviews/admin/pending`, { headers });
           if (res.ok) setPendingReviews(await res.json());
         } else if (activeTab === 'blogs') {
-          // ✅ FIX: Fetch ALL blogs (active and inactive) for the admin panel
           const res = await fetch(`${API_BASE_URL}/blog/admin`, { headers });
           if (res.ok) setBlogs(await res.json());
         }
@@ -144,6 +143,7 @@ const Admin = () => {
     }
   };
 
+  // ✅ FIXED: Variant names now save on the first try for new products
   const handleCreateOrUpdateProduct = async () => {
     if (uploadingImage) {
       toast.error('لطفاً صبر کنید تا آپلود تصویر تکمیل شود...');
@@ -156,6 +156,7 @@ const Admin = () => {
       const cleanSpecs = productForm.specifications.filter(s => s.trim() !== '');
 
       if (!editingProduct) {
+        // 1. Create the base product
         const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { 
           method: 'POST', headers, 
           body: JSON.stringify({ 
@@ -169,7 +170,26 @@ const Admin = () => {
         if (!res1.ok) throw new Error('خطا در ایجاد محصول');
         const productData = await res1.json();
         productId = productData.id;
+
+        // ✅ FIX: Immediately save variants using the working PUT endpoint
+        await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+          method: 'PUT', headers,
+          body: JSON.stringify({
+            variants: productForm.variants.map(v => ({
+              sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+              price_normal: parseFloat(v.price_normal) || 0,
+              price_visitor: parseFloat(v.price_visitor) || 0,
+              price_shop_owner: parseFloat(v.price_shop_owner) || 0,
+              price_wholesale: parseFloat(v.price_wholesale) || 0,
+              discount_percent: parseInt(v.discount_percent) || 0,
+              stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),
+              attributes_text: v.attributes_text || '',
+              selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
+            }))
+          })
+        });
       } else {
+        // 2. Update existing product
         await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
           method: 'PUT', headers,
           body: JSON.stringify({
@@ -192,28 +212,6 @@ const Admin = () => {
             }))
           })
         });
-      }
-
-      if (!editingProduct && productId) {
-        for (const variant of productForm.variants) {
-          if (!variant.price_normal && !variant.stock_quantity) continue;
-          const validSelectedIds = variant.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string');
-          await fetch(`${API_BASE_URL}/admin/products/${productId}/variants`, {
-            method: 'POST', headers,
-            body: JSON.stringify({ 
-              sku: variant.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              purchase_cost: parseFloat(variant.price_normal) || 0,
-              price_normal: parseFloat(variant.price_normal) || 0,
-              price_visitor: parseFloat(variant.price_visitor) || 0,
-              price_shop_owner: parseFloat(variant.price_shop_owner) || 0,
-              price_wholesale: parseFloat(variant.price_wholesale) || 0,
-              discount_percent: parseInt(variant.discount_percent) || 0,
-              stock_quantity: parseInt(variant.stock_quantity) || 0, 
-              attributes_text: variant.attributes_text || '',
-              attribute_value_ids: validSelectedIds
-            })
-          });
-        }
       }
 
       toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
@@ -487,15 +485,22 @@ const Admin = () => {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(newBlog)
       });
+      
       if (res.ok) {
         toast.success(editingBlogId ? 'بلاگ با موفقیت بروزرسانی شد' : 'بلاگ با موفقیت منتشر شد');
         setNewBlog({ title: '', content: '', image_url: '' });
         setEditingBlogId(null);
-        // ✅ FIX: Fetch ALL blogs after adding/editing
         const res2 = await fetch(`${API_BASE_URL}/blog/admin`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setBlogs(await res2.json());
+      } else {
+        const errData = await res.json();
+        console.error("Blog update error:", errData);
+        toast.error(errData.detail || 'خطا در ذخیره بلاگ');
       }
-    } catch (error) { toast.error('خطا در ذخیره بلاگ'); }
+    } catch (error) { 
+      console.error(error);
+      toast.error('خطا در ذخیره بلاگ'); 
+    }
   };
 
   const handleEditBlog = (blog) => {
@@ -528,7 +533,6 @@ const Admin = () => {
         body: JSON.stringify({ is_active: !currentActive })
       });
       if (res.ok) {
-        // ✅ FIX: Fetch ALL blogs after toggling status
         const res2 = await fetch(`${API_BASE_URL}/blog/admin`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setBlogs(await res2.json());
         toast.success('وضعیت بلاگ تغییر کرد');
