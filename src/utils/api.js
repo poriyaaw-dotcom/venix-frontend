@@ -1,20 +1,15 @@
-// src/utils/api.js
-
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 
-// Helper to format prices with Persian numbers and separators (e.g., ۶۰۰۰۰۰)
 export const formatPrice = (price) => {
   if (!price) return '۰';
   return new Intl.NumberFormat('fa-IR').format(price);
 };
 
-// Helper to convert English numbers to Persian
 export const toFarsiNumber = (n) => {
-  const farsiDigits = ['', '۱', '۲', '', '۴', '۵', '', '۷', '۸', ''];
+  const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
   return n.toString().replace(/\d/g, x => farsiDigits[x]);
 };
 
-// 1. Fetch All Products (For Shop Page)
 export const fetchProducts = async () => {
   try {
     const token = localStorage.getItem('token');
@@ -26,25 +21,10 @@ export const fetchProducts = async () => {
     }
     
     const data = await response.json();
-    console.log("🔥 RAW BACKEND DATA:", data);
     const productsArray = Array.isArray(data) ? data : (data.items || []);
 
     return productsArray.map(product => {
-      // Extract unique attributes from all variants
-      const attrMap = {};
-      (product.variants || []).forEach(v => {
-        (v.attributes || []).forEach(a => {
-          if (!attrMap[a.name]) attrMap[a.name] = new Set();
-          attrMap[a.name].add(a.value);
-        });
-      });
-      const formattedAttributes = Object.entries(attrMap).map(([name, values]) => ({
-        name,
-        values: Array.from(values).map(v => ({ value: v }))
-      }));
-
       const firstVariant = product.variants?.[0] || {};
-      // ✅ FIX: Changed purchase_cost to final_price
       const price = firstVariant.final_price || 0; 
       
       return {
@@ -58,7 +38,8 @@ export const fetchProducts = async () => {
         image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://127.0.0.1:8000${product.image_url}`) : '/category-img.png',
         category: product.category_name || 'دستگاه',
         brand: product.brand_name || 'generic',
-        variants: product.variants || [] // Pass the variants array through!
+        variants: product.variants || [],
+        specifications: product.specifications || []
       };
     });
   } catch (error) {
@@ -67,7 +48,6 @@ export const fetchProducts = async () => {
   }
 };
 
-// 2. Fetch Single Product (For Product Detail Page)
 export const fetchProductById = async (id) => {
   try {
     const token = localStorage.getItem('token');
@@ -75,19 +55,6 @@ export const fetchProductById = async (id) => {
     const response = await fetch(`${API_BASE_URL}/products/${id}`, { headers });
     if (!response.ok) throw new Error('Failed to fetch product');
     const product = await response.json();
-
-    // Extract unique attributes from all variants
-    const attrMap = {};
-    (product.variants || []).forEach(v => {
-      (v.attributes || []).forEach(a => {
-        if (!attrMap[a.name]) attrMap[a.name] = new Set();
-        attrMap[a.name].add(a.value);
-      });
-    });
-    const formattedAttributes = Object.entries(attrMap).map(([name, values]) => ({
-      name,
-      values: Array.from(values).map(v => ({ value: v }))
-    }));
 
     const firstVariant = product.variants?.[0] || {};
     const price = firstVariant.final_price || 0;
@@ -103,11 +70,10 @@ export const fetchProductById = async (id) => {
       brand: product.brand_name || 'NO NAME',
       description: product.description || 'توضیحات محصول به زودی اضافه می‌شود.',
       category: product.category_name || 'دستگاه',
-      attributes: formattedAttributes,
       average_rating: product.average_rating || 0,
       review_count: product.review_count || 0,
       variants: product.variants || [],
-      specifications: product.specifications || [], // ✅ ONLY THIS LINE WAS ADDED!
+      specifications: product.specifications || [], // ✅ CRITICAL LINE
     };
   } catch (error) {
     console.error("Error fetching product:", error);
@@ -115,7 +81,6 @@ export const fetchProductById = async (id) => {
   }
 };
 
-// 3. Create Order & Initiate Payment (For Checkout Page)
 export const createOrderAndPay = async (checkoutPayload) => {
   try {
     const token = localStorage.getItem('token');
@@ -141,9 +106,7 @@ export const createOrderAndPay = async (checkoutPayload) => {
       message: orderData.message,
       order_id: orderData.order_id,
       total_price: orderData.total_price
-      // payment_url will be added here once the payment gateway is integrated
     };
-    
   } catch (error) {
     console.error("Checkout error:", error);
     throw error;

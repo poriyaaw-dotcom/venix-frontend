@@ -1,8 +1,7 @@
 import toast from 'react-hot-toast';
-// src/pages/Admin.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar } from 'react-icons/fi';
+import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar, FiSettings } from 'react-icons/fi';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 
@@ -49,7 +48,7 @@ const Admin = () => {
   const [productForm, setProductForm] = useState({
     title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '',
     variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
-    specifications: [''] // ✅ NEW: Dynamic specifications list
+    specifications: ['']
   });
 
   useEffect(() => {
@@ -153,8 +152,6 @@ const Admin = () => {
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     try {
       let productId = editingProduct ? editingProduct.id : null;
-
-      // Filter out empty specifications
       const cleanSpecs = productForm.specifications.filter(s => s.trim() !== '');
 
       if (!editingProduct) {
@@ -165,7 +162,7 @@ const Admin = () => {
             description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
             brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
             category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
-            specifications: cleanSpecs // ✅ Send specifications
+            specifications: cleanSpecs
           }) 
         });
         if (!res1.ok) throw new Error('خطا در ایجاد محصول');
@@ -179,7 +176,7 @@ const Admin = () => {
             description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
             brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
             category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
-            specifications: cleanSpecs, // ✅ Send specifications
+            specifications: cleanSpecs,
             variants: productForm.variants.map(v => ({
               id: v.id,
               sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
@@ -188,15 +185,13 @@ const Admin = () => {
               price_shop_owner: parseFloat(v.price_shop_owner) || 0,
               price_wholesale: parseFloat(v.price_wholesale) || 0,
               discount_percent: parseInt(v.discount_percent) || 0,
-              stock_quantity: parseInt(v.stock_quantity) || 0,
-              attributes_text: v.attributes_text || '',
+              stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),              attributes_text: v.attributes_text || '',
               selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
             }))
           })
         });
       }
 
-      // If creating new product, add variants separately
       if (!editingProduct && productId) {
         for (const variant of productForm.variants) {
           if (!variant.price_normal && !variant.stock_quantity) continue;
@@ -248,7 +243,6 @@ const Admin = () => {
     setUploadingImage(true);
     const formData = new FormData();
     formData.append('file', file);
-    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE_URL}/upload/image`, {
@@ -315,7 +309,6 @@ const Admin = () => {
           image_url: data.image_url || '',
           brand_id: data.brand_id ? String(data.brand_id) : '',
           category_id: data.category_id ? String(data.category_id) : '',
-          // ✅ Load specifications
           specifications: data.specifications && data.specifications.length > 0 ? data.specifications : [''],
           variants: data.variants && data.variants.length > 0 
             ? data.variants.map(v => ({
@@ -326,9 +319,9 @@ const Admin = () => {
                 price_shop_owner: String(v.price_shop_owner || ''),
                 price_wholesale: String(v.price_wholesale || ''),
                 discount_percent: String(v.discount_percent || ''),
-                stock_quantity: String(v.stock_quantity || ''),
+                stock_quantity: v.stock_quantity !== null && v.stock_quantity !== undefined ? String(v.stock_quantity) : '',
                 selectedValueIds: v.attribute_value_ids || v.selectedValueIds || [],
-                attributes_text: v.attributes_text || ''
+                attributes_text: v.attributes_text || '' // ✅ CRITICAL FIX
               }))
             : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]
         });
@@ -709,12 +702,7 @@ const Admin = () => {
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-bold text-gray-500 w-6 text-center bg-white/5 rounded-full py-1">{index + 1}</span>
                       {p.image_url && (
-                        <img 
-                          src={p.image_url.startsWith('http') ? p.image_url : `http://127.0.0.1:8000${p.image_url}`} 
-                          alt={p.title} 
-                          className="w-12 h-12 rounded-lg object-cover bg-white/5"
-                          onError={(e) => { e.target.src = '/category-img.png'; }}
-                        />
+                        <img src={p.image_url.startsWith('http') ? p.image_url : `http://127.0.0.1:8000${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />
                       )}
                       <div>
                         <h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3>
@@ -780,7 +768,7 @@ const Admin = () => {
                       <h3 className="font-bold text-white">{req.business_name}</h3>
                       <p className="text-sm text-gray-400">{req.description}</p>
                       <div className="mt-2 flex gap-3 text-xs">
-                        <span className="bg-white/10 px-2 py-1 rounded text-primary"> {req.user?.phone_number || 'N/A'}</span>
+                        <span className="bg-white/10 px-2 py-1 rounded text-primary">📞 {req.user?.phone_number || 'N/A'}</span>
                         <span className="bg-white/10 px-2 py-1 rounded text-gray-300">👤 {req.user?.full_name || 'بدون نام'}</span>
                       </div>
                     </div>
@@ -998,44 +986,18 @@ const Admin = () => {
                     </div>
                   )}
 
-                  {/* ✅ NEW: Dynamic Specifications Tab */}
                   {productTab === 'attrs' && (
                     <div className="space-y-4">
                       <div className="bg-white/5 rounded-xl p-4 border border-white/5">
                         <h4 className="text-sm font-bold text-primary mb-4">مشخصات فنی محصول (نامحدود)</h4>
                         <p className="text-xs text-gray-400 mb-4">هر مشخصه را در یک خط جداگانه وارد کنید (مثال: باتری 20000 میلی‌آمپر)</p>
-                        
                         {productForm.specifications.map((spec, index) => (
                           <div key={index} className="flex gap-2 mb-2">
-                            <input 
-                              type="text" 
-                              value={spec} 
-                              onChange={(e) => {
-                                const newSpecs = [...productForm.specifications];
-                                newSpecs[index] = e.target.value;
-                                setProductForm(prev => ({...prev, specifications: newSpecs}));
-                              }}
-                              className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary"
-                              placeholder={`مشخصه ${index + 1}...`}
-                            />
-                            <button 
-                              onClick={() => {
-                                const newSpecs = productForm.specifications.filter((_, i) => i !== index);
-                                setProductForm(prev => ({...prev, specifications: newSpecs}));
-                              }}
-                              className="text-red-400 hover:text-red-300 px-3"
-                            >
-                              <FiTrash2 />
-                            </button>
+                            <input type="text" value={spec} onChange={(e) => { const newSpecs = [...productForm.specifications]; newSpecs[index] = e.target.value; setProductForm(prev => ({...prev, specifications: newSpecs})); }} className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" placeholder={`مشخصه ${index + 1}...`} />
+                            <button onClick={() => { const newSpecs = productForm.specifications.filter((_, i) => i !== index); setProductForm(prev => ({...prev, specifications: newSpecs})); }} className="text-red-400 hover:text-red-300 px-3"><FiTrash2 /></button>
                           </div>
                         ))}
-                        
-                        <button 
-                          onClick={() => setProductForm(prev => ({...prev, specifications: [...prev.specifications, '']}))}
-                          className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"
-                        >
-                          <FiPlus /> افزودن مشخصه جدید
-                        </button>
+                        <button onClick={() => setProductForm(prev => ({...prev, specifications: [...prev.specifications, '']}))} className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"><FiPlus /> افزودن مشخصه جدید</button>
                       </div>
                     </div>
                   )}
@@ -1047,10 +1009,7 @@ const Admin = () => {
                           <div className="flex justify-between items-center">
                             <h4 className="text-sm font-bold text-primary">واریانت #{vIdx + 1}</h4>
                             {productForm.variants.length > 1 && (
-                              <button onClick={() => {
-                                const newVariants = productForm.variants.filter((_, i) => i !== vIdx);
-                                setProductForm(prev => ({...prev, variants: newVariants}));
-                              }} className="text-red-400 hover:text-red-300"><FiTrash2 /></button>
+                              <button onClick={() => { const newVariants = productForm.variants.filter((_, i) => i !== vIdx); setProductForm(prev => ({...prev, variants: newVariants})); }} className="text-red-400 hover:text-red-300"><FiTrash2 /></button>
                             )}
                           </div>
                           
@@ -1105,28 +1064,13 @@ const Admin = () => {
                 </div>
 
                 <div className="flex justify-between pt-4 border-t border-white/10">
-                  <button onClick={() => {
-                    if (productTab === 'attrs') setProductTab('base');
-                    else if (productTab === 'variants') setProductTab('attrs');
-                  }} className={`px-6 py-3 rounded-xl font-bold transition ${productTab === 'base' ? 'invisible' : 'bg-white/5 text-white hover:bg-white/10'}`}>
-                    قبلی
-                  </button>
-                  
+                  <button onClick={() => { if (productTab === 'attrs') setProductTab('base'); else if (productTab === 'variants') setProductTab('attrs'); }} className={`px-6 py-3 rounded-xl font-bold transition ${productTab === 'base' ? 'invisible' : 'bg-white/5 text-white hover:bg-white/10'}`}>قبلی</button>
                   {productTab === 'variants' || editingProduct ? (
-                    <button 
-                      onClick={handleCreateOrUpdateProduct} 
-                      disabled={uploadingImage}
-                      className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                    <button onClick={handleCreateOrUpdateProduct} disabled={uploadingImage} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                       {uploadingImage ? 'در حال آپلود...' : <><FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}</>}
                     </button>
                   ) : (
-                    <button onClick={() => {
-                      if (productTab === 'base') setProductTab('attrs');
-                      else if (productTab === 'attrs') setProductTab('variants');
-                    }} className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition flex items-center gap-2">
-                      مرحله بعد
-                    </button>
+                    <button onClick={() => { if (productTab === 'base') setProductTab('attrs'); else if (productTab === 'attrs') setProductTab('variants'); }} className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition flex items-center gap-2">مرحله بعد</button>
                   )}
                 </div>
               </div>

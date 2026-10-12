@@ -25,17 +25,21 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('venix_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // ✅ UPDATED: Now explicitly expects variant_id for accurate backend syncing
-  const addToCart = (variantId, quantity, productInfo) => {
+  // ✅ UPDATED: Now accepts maxStock to prevent exceeding available inventory
+  const addToCart = (variantId, quantity, productInfo, maxStock = 999) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.variant_id === variantId);
+      
       if (existing) {
+        // ✅ CAP THE QUANTITY: Never let it exceed maxStock
+        const newQuantity = Math.min(existing.quantity + quantity, maxStock);
         return prev.map((item) =>
           item.variant_id === variantId
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: newQuantity }
             : item
         );
       }
+      
       return [...prev, { 
         variant_id: variantId, 
         quantity, 
@@ -54,13 +58,16 @@ export const CartProvider = ({ children }) => {
     setCartItems((prev) => prev.filter((item) => item.variant_id !== variantId));
   };
 
-  const updateQuantity = (variantId, quantity) => {
+  const updateQuantity = (variantId, quantity, maxStock = 999) => {
     if (quantity <= 0) {
       removeFromCart(variantId);
       return;
     }
+    // ✅ CAP THE QUANTITY HERE TOO, just in case they manually type a higher number
+    const cappedQuantity = Math.min(quantity, maxStock);
+    
     setCartItems((prev) =>
-      prev.map((item) => (item.variant_id === variantId ? { ...item, quantity } : item))
+      prev.map((item) => (item.variant_id === variantId ? { ...item, quantity: cappedQuantity } : item))
     );
   };
 
@@ -69,7 +76,6 @@ export const CartProvider = ({ children }) => {
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  // Note: This total is for UI display only. The backend calculates the authoritative total at checkout.
   const cartTotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * item.quantity), 0);
 
   return (
