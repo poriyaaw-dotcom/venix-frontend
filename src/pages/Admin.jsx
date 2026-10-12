@@ -111,7 +111,8 @@ const Admin = () => {
           const res = await fetch(`${API_BASE_URL}/reviews/admin/pending`, { headers });
           if (res.ok) setPendingReviews(await res.json());
         } else if (activeTab === 'blogs') {
-          const res = await fetch(`${API_BASE_URL}/blog/`, { headers });
+          // ✅ FIX: Fetch ALL blogs (active and inactive) for the admin panel
+          const res = await fetch(`${API_BASE_URL}/blog/admin`, { headers });
           if (res.ok) setBlogs(await res.json());
         }
       } catch (error) { console.error(error); }
@@ -185,7 +186,8 @@ const Admin = () => {
               price_shop_owner: parseFloat(v.price_shop_owner) || 0,
               price_wholesale: parseFloat(v.price_wholesale) || 0,
               discount_percent: parseInt(v.discount_percent) || 0,
-              stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),              attributes_text: v.attributes_text || '',
+              stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),
+              attributes_text: v.attributes_text || '',
               selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
             }))
           })
@@ -321,7 +323,7 @@ const Admin = () => {
                 discount_percent: String(v.discount_percent || ''),
                 stock_quantity: v.stock_quantity !== null && v.stock_quantity !== undefined ? String(v.stock_quantity) : '',
                 selectedValueIds: v.attribute_value_ids || v.selectedValueIds || [],
-                attributes_text: v.attributes_text || '' // ✅ CRITICAL FIX
+                attributes_text: v.attributes_text || ''
               }))
             : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]
         });
@@ -489,7 +491,8 @@ const Admin = () => {
         toast.success(editingBlogId ? 'بلاگ با موفقیت بروزرسانی شد' : 'بلاگ با موفقیت منتشر شد');
         setNewBlog({ title: '', content: '', image_url: '' });
         setEditingBlogId(null);
-        const res2 = await fetch(`${API_BASE_URL}/blog/`, { headers: { 'Authorization': `Bearer ${token}` } });
+        // ✅ FIX: Fetch ALL blogs after adding/editing
+        const res2 = await fetch(`${API_BASE_URL}/blog/admin`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setBlogs(await res2.json());
       }
     } catch (error) { toast.error('خطا در ذخیره بلاگ'); }
@@ -525,7 +528,8 @@ const Admin = () => {
         body: JSON.stringify({ is_active: !currentActive })
       });
       if (res.ok) {
-        const res2 = await fetch(`${API_BASE_URL}/blog/`, { headers: { 'Authorization': `Bearer ${token}` } });
+        // ✅ FIX: Fetch ALL blogs after toggling status
+        const res2 = await fetch(`${API_BASE_URL}/blog/admin`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res2.ok) setBlogs(await res2.json());
         toast.success('وضعیت بلاگ تغییر کرد');
       }

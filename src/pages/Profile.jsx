@@ -1,5 +1,4 @@
 import toast from 'react-hot-toast';
-// src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiPackage, FiLogOut, FiBox, FiEdit2, FiPlus, FiTrash2, FiX } from 'react-icons/fi';
@@ -17,7 +16,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('info');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [newAddress, setNewAddress] = useState({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
+  const [newAddress, setNewAddress] = useState({ province:'', city: '', full_address: '', postal_code: '', phone: ''});
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -30,7 +29,6 @@ const Profile = () => {
         // 1. Fetch real user profile
         const userRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me', { headers });
         
-        // ✅ SECURITY FIX: If backend rejects token (401), kick user out
         if (userRes.status === 401) {
           localStorage.removeItem('token');
           navigate('/login');
@@ -38,24 +36,27 @@ const Profile = () => {
         }
 
         if (userRes.ok) {
-          const userData = await userRes.json();
+          const userDataJson = await userRes.json();
           setUserData({ 
-            phone: userData.phone_number, 
-            fullName: userData.full_name || '', 
-            isAdmin: userData.is_admin, 
-            group: userData.customer_group,
+            phone: userDataJson.phone_number, 
+            fullName: userDataJson.full_name || '', 
+            isAdmin: userDataJson.is_admin, 
+            group: userDataJson.customer_group,
             businessName: '' 
           });
           
-          const names = (userData.full_name || '').split(' ');
+          const names = (userDataJson.full_name || '').split(' ');
           setFirstName(names[0] || '');
           setLastName(names.slice(1).join(' ') || '');
 
-          // ✅ ADDRESS FIX: Load addresses from localStorage fallback
-          const savedData = localStorage.getItem(`venix_data_${userData.phone_number}`);
-          if (savedData) {
-            const parsed = JSON.parse(savedData);
-            setAddresses(parsed.addresses || []);
+          // ✅ FIX: Read from the EXACT SAME key we save to
+          const savedAddresses = localStorage.getItem('venix_user_addresses');
+          if (savedAddresses) {
+            try {
+              setAddresses(JSON.parse(savedAddresses));
+            } catch (e) {
+              console.error("Failed to parse addresses", e);
+            }
           }
         }
 
@@ -83,11 +84,6 @@ const Profile = () => {
     return 'کاربر عادی';
   };
 
-  const saveToStorage = (newFullName, newAddresses, newBusinessName) => {
-    const dataToSave = { fullName: newFullName, addresses: newAddresses, businessName: newBusinessName || userData.businessName };
-    localStorage.setItem(`venix_data_${userData.phone}`, JSON.stringify(dataToSave));
-  };
-
   const handleSaveInfo = async () => {
     const newFullName = `${firstName} ${lastName}`.trim();
     const token = localStorage.getItem('token');
@@ -104,7 +100,6 @@ const Profile = () => {
       
       if (res.ok) {
         setUserData({ ...userData, fullName: newFullName });
-        saveToStorage(newFullName, addresses, userData.businessName);
         toast.success('اطلاعات با موفقیت در سرور ذخیره شد!');
         setIsEditModalOpen(false);
       } else {
@@ -117,7 +112,9 @@ const Profile = () => {
   };
 
   const handleAddAddress = async () => {
-    if (!newAddress.province || !newAddress.city || !newAddress.full_address) return toast.error('لطفا استان، شهر و آدرس را وارد کنید');
+    if (!newAddress.province || !newAddress.city || !newAddress.full_address) {
+      return toast.error('لطفا استان، شهر و آدرس را وارد کنید');
+    }
     const token = localStorage.getItem('token');
     
     try {
@@ -134,8 +131,9 @@ const Profile = () => {
         const savedAddr = await res.json();
         const updatedAddresses = [...addresses, savedAddr];
         setAddresses(updatedAddresses);
-        localStorage.setItem('venix_current_user_addresses', JSON.stringify(updatedAddresses));
-        toast.success('آدرس با موفقیت در سرور ذخیره شد');
+        // ✅ FIX: Save to the EXACT SAME key we read from
+        localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
+        toast.success('آدرس با موفقیت ذخیره شد');
         setNewAddress({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
       } else {
         throw new Error('Backend failed');
@@ -144,7 +142,8 @@ const Profile = () => {
       // Fallback to localStorage if backend endpoint doesn't exist yet
       const updatedAddresses = [...addresses, { ...newAddress, id: Date.now() }];
       setAddresses(updatedAddresses);
-      localStorage.setItem('venix_current_user_addresses', JSON.stringify(updatedAddresses));
+      // ✅ FIX: Save to the EXACT SAME key we read from
+      localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
       toast.success('آدرس به صورت محلی ذخیره شد');
       setNewAddress({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
     }
@@ -162,7 +161,8 @@ const Profile = () => {
     }
     const updatedAddresses = addresses.filter(addr => addr.id !== id);
     setAddresses(updatedAddresses);
-    localStorage.setItem('venix_current_user_addresses', JSON.stringify(updatedAddresses));
+    // ✅ FIX: Save to the EXACT SAME key we read from
+    localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
     toast.success('آدرس حذف شد');
   };
 
@@ -187,7 +187,7 @@ const Profile = () => {
             <h2 className="text-xl font-bold text-white mb-1">{userData.fullName || 'کاربر مهمان'}</h2>
             <p className="text-sm text-gray-400 mb-2" dir="ltr">{userData.phone}</p>
             
-            <span className={`text-xs px-3 py-1 rounded-full mb-6 ${userData.isAdmin ? 'bg-primary/20 text-primary' : (userData.group !== 'NORMAL' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-300')}`}>
+            <span className={`text-xs px-3 py-1 rounded-full mb-6 ${userData.isAdmin ? 'bg-primary/20 text-primary' :(userData.group !== 'NORMAL' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-300')}`}>
               {getRoleLabel()}
             </span>
             
@@ -247,7 +247,6 @@ const Profile = () => {
                         </div>
                         <p className="text-xs text-gray-400 mb-2">{new Date(order.created_at).toLocaleDateString('fa-IR')}</p>
                         
-                        {/* ✅ NEW: Show ordered items */}
                         {order.items && order.items.length > 0 && (
                           <div className="border-t border-white/5 pt-3 mt-1 space-y-2">
                             {order.items.map((item, idx) => (

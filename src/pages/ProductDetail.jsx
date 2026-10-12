@@ -59,11 +59,12 @@ const ProductDetail = () => {
   );
 
   const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
-  const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.price_normal || product.price) : product.price;
+  
+  // ✅ Use the exact property names the backend sends: base_price and final_price
+  const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.base_price || product.price) : product.price;
   const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
   const brandName = product.brand || product.brand_name || null;
 
-  // ✅ SIMPLE & DIRECT STOCK LOGIC: No more hiding, no more complex fallbacks.
   const stockQty = selectedVariant?.stock_quantity;
   const isOutOfStock = stockQty === null || stockQty === undefined || stockQty <= 0;
   const displayStockLimit = typeof stockQty === 'number' && stockQty > 0 ? stockQty : 999;
@@ -122,7 +123,7 @@ const ProductDetail = () => {
                           <div className={`font-bold text-lg ${isSelected ? 'text-primary' : 'text-white'}`}>{variantName}</div>
                         </div>
                         <div className={`font-black text-xl ${isSelected ? 'text-primary' : 'text-gray-300'}`}>
-                          {formatPrice(variant.final_price || variant.price_normal)} <span className="text-xs font-normal text-gray-400">تومان</span>
+                          {formatPrice(variant.final_price || variant.base_price)} <span className="text-xs font-normal text-gray-400">تومان</span>
                         </div>
                       </div>
                     );
@@ -141,7 +142,7 @@ const ProductDetail = () => {
             <div className="mt-5 bg-white/[0.035] border border-white/10 rounded-2xl p-5">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                  {hasDiscount && selectedVariant && selectedVariant.price_normal && <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(selectedVariant.price_normal)} تومان</div>}
+                  {hasDiscount && selectedVariant && selectedVariant.base_price && <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(selectedVariant.base_price)} تومان</div>}
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black text-white">{formatPrice(displayPrice)}</span>
                     <span className="text-xs text-gray-500">تومان</span>
@@ -158,13 +159,22 @@ const ProductDetail = () => {
                 onClick={() => {
                   if (isOutOfStock) return;
                   const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
-                  const maxStock = selectedVariant?.stock_quantity || 999; // ✅ GET MAX STOCK
+                  const maxStock = selectedVariant?.stock_quantity || 999; 
                   
+                  // ✅ FIX: Use base_price and final_price (the exact keys the backend sends)
+                  const vPrice = selectedVariant?.base_price || selectedVariant?.final_price || product.price;
+                  const vFinalPrice = selectedVariant?.final_price || vPrice;
+                  const vDiscount = selectedVariant?.discount_percent || 0;
+
                   addToCart(targetVariantId, quantity, { 
-                    title: product.title, titleEn: product.titleEn || '', price: product.price, 
-                    discount: product.discount || 0, discountPrice: product.discountPrice || 0, 
-                    image: product.image || product.image_url || '', product_id: product.id 
-                  }, maxStock); // ✅ PASS IT TO THE CART
+                    title: product.title, 
+                    titleEn: product.titleEn || '', 
+                    price: vPrice, 
+                    discount: vDiscount, 
+                    discountPrice: vFinalPrice, 
+                    image: product.image || product.image_url || '', 
+                    product_id: product.id 
+                  }, maxStock); 
                 }} 
                 disabled={isOutOfStock}
                 className={`w-full mt-5 font-bold py-3 md:py-3.5 rounded-xl transition shadow-lg flex items-center justify-center gap-2 ${isOutOfStock ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-button hover:bg-button/90 text-white shadow-button/20'}`}
