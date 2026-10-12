@@ -60,7 +60,7 @@ const ProductDetail = () => {
 
   const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
   
-  // ✅ Use the exact property names the backend sends: base_price and final_price
+  // ✅ final_price is the authoritative price for the current user's group
   const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.base_price || product.price) : product.price;
   const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
   const brandName = product.brand || product.brand_name || null;
@@ -161,15 +161,16 @@ const ProductDetail = () => {
                   const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
                   const maxStock = selectedVariant?.stock_quantity || 999; 
                   
-                  // ✅ FIX: Use base_price and final_price (the exact keys the backend sends)
-                  const vPrice = selectedVariant?.base_price || selectedVariant?.final_price || product.price;
-                  const vFinalPrice = selectedVariant?.final_price || vPrice;
+                  // ✅ FIX: Pass final_price as the main price (it's already calculated for the user's group)
+                  const vBasePrice = selectedVariant?.base_price || product.price;
+                  const vFinalPrice = selectedVariant?.final_price || vBasePrice;
                   const vDiscount = selectedVariant?.discount_percent || 0;
 
                   addToCart(targetVariantId, quantity, { 
                     title: product.title, 
                     titleEn: product.titleEn || '', 
-                    price: vPrice, 
+                    price: vFinalPrice,       // ✅ The actual price to pay
+                    basePrice: vBasePrice,    // ✅ For strikethrough display in cart
                     discount: vDiscount, 
                     discountPrice: vFinalPrice, 
                     image: product.image || product.image_url || '', 

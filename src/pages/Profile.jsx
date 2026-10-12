@@ -26,7 +26,6 @@ const Profile = () => {
       try {
         const headers = { 'Authorization': `Bearer ${token}` };
         
-        // 1. Fetch real user profile
         const userRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me', { headers });
         
         if (userRes.status === 401) {
@@ -49,19 +48,16 @@ const Profile = () => {
           setFirstName(names[0] || '');
           setLastName(names.slice(1).join(' ') || '');
 
-          // ✅ ROBUST ADDRESS FIX: Ask the database first, fallback to localStorage
           try {
             const addrRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me/addresses', { headers });
             if (addrRes.ok) {
               const backendAddresses = await addrRes.json();
               setAddresses(backendAddresses);
-              // Keep localStorage in sync
               localStorage.setItem('venix_user_addresses', JSON.stringify(backendAddresses));
             } else {
               throw new Error("Backend failed");
             }
           } catch (err) {
-            // Fallback to localStorage if backend fails
             const savedAddresses = localStorage.getItem('venix_user_addresses');
             if (savedAddresses) {
               try { setAddresses(JSON.parse(savedAddresses)); } catch (e) {}
@@ -69,7 +65,6 @@ const Profile = () => {
           }
         }
 
-        // 2. Fetch real order history
         setLoadingOrders(true);
         const ordersRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me/orders', { headers });
         if (ordersRes.ok) {
@@ -95,6 +90,11 @@ const Profile = () => {
 
   const handleSaveInfo = async () => {
     const newFullName = `${firstName} ${lastName}`.trim();
+    
+    if (!newFullName) {
+      return toast.error('لطفاً نام و نام خانوادگی را وارد کنید');
+    }
+    
     const token = localStorage.getItem('token');
     
     try {
@@ -108,14 +108,16 @@ const Profile = () => {
       });
       
       if (res.ok) {
-        setUserData({ ...userData, fullName: newFullName });
+        const data = await res.json();
+        setUserData({ ...userData, fullName: data.full_name || newFullName });
         toast.success('اطلاعات با موفقیت در سرور ذخیره شد!');
         setIsEditModalOpen(false);
       } else {
-        toast.error('خطا در ذخیره اطلاعات');
+        const err = await res.json();
+        toast.error(err.detail || 'خطا در ذخیره اطلاعات');
       }
     } catch (error) {
-      console.error(error);
+      console.error("Save info error:", error);
       toast.error('خطای شبکه');
     }
   };
@@ -147,7 +149,6 @@ const Profile = () => {
         throw new Error('Backend failed');
       }
     } catch (error) {
-      // Fallback to localStorage if backend endpoint doesn't exist yet
       const updatedAddresses = [...addresses, { ...newAddress, id: Date.now() }];
       setAddresses(updatedAddresses);
       localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));
@@ -163,9 +164,8 @@ const Profile = () => {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-    } catch (error) {
-      // Ignore backend errors for fallback
-    }
+    } catch (error) {}
+    
     const updatedAddresses = addresses.filter(addr => addr.id !== id);
     setAddresses(updatedAddresses);
     localStorage.setItem('venix_user_addresses', JSON.stringify(updatedAddresses));

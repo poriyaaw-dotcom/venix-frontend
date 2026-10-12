@@ -25,14 +25,14 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('venix_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // ✅ UPDATED: Now accepts maxStock to prevent exceeding available inventory
+  // ✅ UPDATED: Now stores max_stock in the cart item to enforce limits
   const addToCart = (variantId, quantity, productInfo, maxStock = 999) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.variant_id === variantId);
       
       if (existing) {
-        // ✅ CAP THE QUANTITY: Never let it exceed maxStock
-        const newQuantity = Math.min(existing.quantity + quantity, maxStock);
+        const limit = existing.max_stock !== undefined && existing.max_stock !== null ? existing.max_stock : 999;
+        const newQuantity = Math.min(existing.quantity + quantity, limit);
         return prev.map((item) =>
           item.variant_id === variantId
             ? { ...item, quantity: newQuantity }
@@ -45,11 +45,13 @@ export const CartProvider = ({ children }) => {
         quantity, 
         title: productInfo?.title || 'محصول',
         titleEn: productInfo?.titleEn || '',
-        price: productInfo?.price || 0,
+        price: productInfo?.price || 0,          // ✅ This is now the final_price (correct group price)
+        basePrice: productInfo?.basePrice || 0,  // ✅ Kept for strikethrough display
         discountPrice: productInfo?.discountPrice || 0,
         discount: productInfo?.discount || 0,
         image: productInfo?.image || productInfo?.image_url || '',
-        product_id: productInfo?.product_id || productInfo?.id || variantId
+        product_id: productInfo?.product_id || productInfo?.id || variantId,
+        max_stock: maxStock                      // ✅ Save the limit in the cart item
       }];
     });
   };
@@ -58,16 +60,20 @@ export const CartProvider = ({ children }) => {
     setCartItems((prev) => prev.filter((item) => item.variant_id !== variantId));
   };
 
-  const updateQuantity = (variantId, quantity, maxStock = 999) => {
+  // ✅ UPDATED: Reads max_stock from the cart item to cap quantity
+  const updateQuantity = (variantId, quantity) => {
     if (quantity <= 0) {
       removeFromCart(variantId);
       return;
     }
-    // ✅ CAP THE QUANTITY HERE TOO, just in case they manually type a higher number
-    const cappedQuantity = Math.min(quantity, maxStock);
-    
     setCartItems((prev) =>
-      prev.map((item) => (item.variant_id === variantId ? { ...item, quantity: cappedQuantity } : item))
+      prev.map((item) => {
+        if (item.variant_id === variantId) {
+          const limit = item.max_stock !== undefined && item.max_stock !== null ? item.max_stock : 999;
+          return { ...item, quantity: Math.min(quantity, limit) };
+        }
+        return item;
+      })
     );
   };
 
@@ -76,6 +82,7 @@ export const CartProvider = ({ children }) => {
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  // ✅ Total is now accurate because item.price is the correct group final_price
   const cartTotal = cartItems.reduce((sum, item) => sum + ((item.price || 0) * item.quantity), 0);
 
   return (
