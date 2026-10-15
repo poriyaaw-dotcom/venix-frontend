@@ -9,7 +9,7 @@ const Footer = () => {
 
   // Fetch the first 4 categories dynamically for the footer
   useEffect(() => {
-    fetch('http://api.venixpodshop.com/api/v1/products/categories')
+    fetch('https://api.venixpodshop.com/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

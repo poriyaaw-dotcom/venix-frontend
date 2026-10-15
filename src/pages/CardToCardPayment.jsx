@@ -7,7 +7,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = 'http://api.venixpodshop.com/api/v1';
+const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
 
 const CardToCardPayment = () => {
   const navigate = useNavigate();

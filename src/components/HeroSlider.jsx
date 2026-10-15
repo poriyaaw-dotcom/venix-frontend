@@ -4,7 +4,7 @@ const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   
   // Point directly to the backend where the uploads folder actually lives
-  const BACKEND_URL = "http://api.venixpodshop.com"; 
+  const BACKEND_URL = "https://api.venixpodshop.com"; 
 
   const posters = [
     { id: 1, image: `${BACKEND_URL}/uploads/cover1.jpg`, alt: 'Hero Cover 1' },

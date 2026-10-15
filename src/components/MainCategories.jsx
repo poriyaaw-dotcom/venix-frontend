@@ -8,7 +8,7 @@ const MainCategories = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://api.venixpodshop.com/api/v1/products/categories');
+        const res = await fetch('https://api.venixpodshop.com/api/v1/products/categories');
         if (res.ok) {
           const data = await res.json();
           // Limit to the first 10 categories to preserve the landing page design
@@ -40,7 +40,7 @@ const MainCategories = () => {
                 className="bg-[#252525] rounded-[20px] md:rounded-[30px] flex flex-col items-center justify-end cursor-pointer hover:scale-105 transition-transform shadow-lg border border-primary/5 relative overflow-hidden group w-[120px] h-[120px] md:w-[180px] md:h-[180px] p-3 md:p-4"
               >
                 <img 
-  src={cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `http://api.venixpodshop.com${cat.image_url}`) : '/category-img.png'} 
+  src={cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `https://api.venixpodshop.com${cat.image_url}`) : '/category-img.png'} 
   alt={cat.name} 
   className="w-12 h-12 md:w-24 md:h-24 object-contain mb-1.5 md:mb-2 group-hover:scale-110 transition-transform duration-300 z-10"
   onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }} 

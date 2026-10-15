@@ -11,7 +11,7 @@ const BlogSection = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await fetch('http://api.venixpodshop.com/api/v1/blog/');
+        const res = await fetch('https://api.venixpodshop.com/api/v1/blog/');
         if (res.ok) {
           const data = await res.json();
           // Filter only active blogs
@@ -53,7 +53,7 @@ const BlogSection = () => {
         <div className="md:hidden flex gap-3 overflow-x-auto pb-4 px-4 -mx-4" style={{ scrollbarWidth: 'none' }}>
           {blogs.map((blog) => {
             const imageUrl = blog.image_url 
-              ? (blog.image_url.startsWith('http') ? blog.image_url : `http://api.venixpodshop.com${blog.image_url}`)
+              ? (blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`)
               : null;
             return (
               <div 
@@ -106,7 +106,7 @@ const BlogSection = () => {
             }
 
             const imageUrl = blog.image_url 
-              ? (blog.image_url.startsWith('http') ? blog.image_url : `http://api.venixpodshop.com${blog.image_url}`)
+              ? (blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`)
               : null;
 
             const style = {

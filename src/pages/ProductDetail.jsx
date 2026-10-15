@@ -33,7 +33,7 @@ const ProductDetail = () => {
     };
     const loadReviews = async () => {
       try {
-        const res = await fetch(`http://api.venixpodshop.com/api/v1/reviews/product/${id}`);
+        const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/product/${id}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {}
     };
@@ -237,7 +237,7 @@ const ProductDetail = () => {
               const token = localStorage.getItem('token');
               if (!token) { alert('لطفاً ابتدا وارد حساب کاربری خود شوید.'); return; }
               try {
-                const res = await fetch(`http://api.venixpodshop.com/api/v1/reviews/?product_id=${id}`, {
+                const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/?product_id=${id}`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
                 });

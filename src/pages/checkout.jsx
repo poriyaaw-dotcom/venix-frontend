@@ -21,7 +21,7 @@ const Checkout = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetch('http://api.venixpodshop.com/api/v1/auth/me/addresses', {
+      fetch('https://api.venixpodshop.com/api/v1/auth/me/addresses', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.ok ? res.json() : null)
