@@ -13,7 +13,7 @@ const ShopSidebar = ({ filters, setFilters }) => {
 
   useEffect(() => {
     // Fetch Categories dynamically
-    fetch('http://127.0.0.1:8000/api/v1/products/categories')
+    fetch('http://api.venixpodshop.com/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCategories(data);
@@ -21,7 +21,7 @@ const ShopSidebar = ({ filters, setFilters }) => {
       .catch(err => console.error("Failed to load categories:", err));
 
     // Fetch Brands dynamically
-    fetch('http://127.0.0.1:8000/api/v1/products/brands')
+    fetch('http://api.venixpodshop.com/api/v1/products/brands')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setBrands(data);
