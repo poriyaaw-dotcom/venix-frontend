@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Using relative paths just like the rest of your app
   const posters = [
-    { id: 1, bg: 'bg-primary' },
-    { id: 2, bg: 'bg-[#eab308]' },
-    { id: 3, bg: 'bg-[#ca8a04]' },
+    { id: 1, image: '/uploads/cover1.jpg', alt: 'Hero Cover 1' },
+    { id: 2, image: '/uploads/cover2.jpg', alt: 'Hero Cover 2' },
   ];
 
   useEffect(() => {
@@ -15,16 +16,28 @@ const HeroSlider = () => {
 
   return (
     <section className="bg-background flex justify-center mb-[35px]">
-      {/* Removed rounded corners */}
-      <div className="relative w-full max-w-[1750px] h-[200px] md:h-[486px] overflow-hidden bg-primary">
+      <div className="relative w-full max-w-[1750px] h-[200px] md:h-[486px] overflow-hidden bg-gray-900">
         {posters.map((poster, idx) => (
-          <div key={poster.id} className={`absolute inset-0 transition-opacity duration-700 flex items-center justify-center ${poster.bg} ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
-            <h2 className="text-4xl md:text-6xl font-black text-background/20 tracking-widest">VENIX</h2>
+          <div 
+            key={poster.id} 
+            className={`absolute inset-0 transition-opacity duration-700 flex items-center justify-center ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <img 
+              src={poster.image} 
+              alt={poster.alt} 
+              className="w-full h-full object-cover"
+            />
           </div>
         ))}
-        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 md:gap-3">
+        
+        {/* Navigation Dots */}
+        <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 md:gap-3 z-10">
           {posters.map((_, idx) => (
-            <button key={idx} onClick={() => setCurrentSlide(idx)} className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all ${idx === currentSlide ? 'bg-background w-6 md:w-8' : 'bg-background/50'}`} />
+            <button 
+              key={idx} 
+              onClick={() => setCurrentSlide(idx)} 
+              className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-all ${idx === currentSlide ? 'bg-white w-6 md:w-8' : 'bg-white/50'}`} 
+            />
           ))}
         </div>
       </div>
