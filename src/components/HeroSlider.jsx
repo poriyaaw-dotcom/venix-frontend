@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   
-  // Using relative paths just like the rest of your app
+  // Point directly to the backend where the uploads folder actually lives
+  const BACKEND_URL = "http://api.venixpodshop.com"; 
+
   const posters = [
-    { id: 1, image: '/uploads/cover1.jpg', alt: 'Hero Cover 1' },
-    { id: 2, image: '/uploads/cover2.jpg', alt: 'Hero Cover 2' },
+    { id: 1, image: `${BACKEND_URL}/uploads/cover1.jpg`, alt: 'Hero Cover 1' },
+    { id: 2, image: `${BACKEND_URL}/uploads/cover2.jpg`, alt: 'Hero Cover 2' },
   ];
 
   useEffect(() => {
