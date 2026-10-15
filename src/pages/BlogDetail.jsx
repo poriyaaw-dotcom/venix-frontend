@@ -13,7 +13,7 @@ const BlogDetail = () => {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/blog/${id}`);
+        const res = await fetch(`http://api.venixpodshop.com/api/v1/blog/${id}`);
         if (res.ok) {
           const data = await res.json();
           setBlog(data);
@@ -34,7 +34,7 @@ const BlogDetail = () => {
   if (!blog) return null;
 
   const imageUrl = blog.image_url 
-    ? (blog.image_url.startsWith('http') ? blog.image_url : `http://127.0.0.1:8000${blog.image_url}`)
+    ? (blog.image_url.startsWith('http') ? blog.image_url : `http://api.venixpodshop.com${blog.image_url}`)
     : null;
 
   return (

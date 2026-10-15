@@ -26,7 +26,7 @@ const Profile = () => {
       try {
         const headers = { 'Authorization': `Bearer ${token}` };
         
-        const userRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me', { headers });
+        const userRes = await fetch('http://api.venixpodshop.com/api/v1/auth/me', { headers });
         
         if (userRes.status === 401) {
           localStorage.removeItem('token');
@@ -49,7 +49,7 @@ const Profile = () => {
           setLastName(names.slice(1).join(' ') || '');
 
           try {
-            const addrRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me/addresses', { headers });
+            const addrRes = await fetch('http://api.venixpodshop.com/api/v1/auth/me/addresses', { headers });
             if (addrRes.ok) {
               const backendAddresses = await addrRes.json();
               setAddresses(backendAddresses);
@@ -66,7 +66,7 @@ const Profile = () => {
         }
 
         setLoadingOrders(true);
-        const ordersRes = await fetch('http://127.0.0.1:8000/api/v1/auth/me/orders', { headers });
+        const ordersRes = await fetch('http://api.venixpodshop.com/api/v1/auth/me/orders', { headers });
         if (ordersRes.ok) {
           const ordersData = await ordersRes.json();
           setOrders(ordersData);
@@ -98,7 +98,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/me', {
+      const res = await fetch('http://api.venixpodshop.com/api/v1/auth/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ const Profile = () => {
     const token = localStorage.getItem('token');
     
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/auth/me/addresses', {
+      const res = await fetch('http://api.venixpodshop.com/api/v1/auth/me/addresses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ const Profile = () => {
   const handleDeleteAddress = async (id) => {
     const token = localStorage.getItem('token');
     try {
-      await fetch(`http://127.0.0.1:8000/api/v1/auth/me/addresses/${id}`, {
+      await fetch(`http://api.venixpodshop.com/api/v1/auth/me/addresses/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
