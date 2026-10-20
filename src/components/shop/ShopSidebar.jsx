@@ -1,11 +1,9 @@
-// src/components/shop/ShopSidebar.jsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FiChevronDown, FiChevronUp, FiX } from 'react-icons/fi';
 
 const ShopSidebar = ({ filters, setFilters }) => {
   const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
+  const [allBrands, setAllBrands] = useState([]);
   const [openSections, setOpenSections] = useState({
     categories: true,
     brands: true,
@@ -20,14 +18,30 @@ const ShopSidebar = ({ filters, setFilters }) => {
       })
       .catch(err => console.error("Failed to load categories:", err));
 
-    // Fetch Brands dynamically
+    // Fetch ALL Brands dynamically (with category_id included)
     fetch('https://api.venixpodshop.com/api/v1/products/brands')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setBrands(data);
+        if (Array.isArray(data)) setAllBrands(data);
       })
       .catch(err => console.error("Failed to load brands:", err));
   }, []);
+
+  // ✅ DYNAMIC FILTERING: Instantly filter brands based on selected categories
+  const displayedBrands = useMemo(() => {
+    // If no categories are selected, show ALL brands
+    if (filters.categories.length === 0) {
+      return allBrands;
+    }
+    
+    // Find the IDs of the currently selected categories
+    const selectedCategoryIds = categories
+      .filter(cat => filters.categories.includes(cat.name))
+      .map(cat => cat.id);
+    
+    // Return only brands that belong to the selected categories
+    return allBrands.filter(brand => selectedCategoryIds.includes(brand.category_id));
+  }, [allBrands, filters.categories, categories]);
 
   const toggleSection = (key) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -108,10 +122,10 @@ const ShopSidebar = ({ filters, setFilters }) => {
         onToggle={() => toggleSection('brands')}
       >
         <ul className="space-y-3">
-          {brands.length === 0 ? (
-            <li className="text-[12px] text-gray/50">برندی یافت نشد</li>
+          {displayedBrands.length === 0 ? (
+            <li className="text-[12px] text-gray/50">برندی برای این دسته‌بندی یافت نشد</li>
           ) : (
-            brands.map((brand) => (
+            displayedBrands.map((brand) => (
               <li key={brand.id}>
                 <label className="flex items-center justify-between cursor-pointer group">
                   <span className="flex items-center gap-2">

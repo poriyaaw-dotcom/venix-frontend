@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../Context/CartContext';
-import { FiCheck, FiTruck, FiShield, FiChevronLeft, FiAlertCircle } from 'react-icons/fi';
+import { FiCheck, FiTruck, FiShield, FiChevronLeft, FiAlertCircle, FiCreditCard } from 'react-icons/fi';
 import { formatPrice, createOrderAndPay } from '../utils/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -10,14 +10,16 @@ import Footer from '../components/Footer';
 const Checkout = () => {
   const { cartItems, clearCart, cartTotal } = useCart();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
+  const [formData, setFormData] = useState({ 
+    province: '', city: '', full_address: '', postal_code: '', phone: '', 
+    payment_method: 'card_to_card' // NEW LINE
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState([]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Fetch saved addresses on mount (Synced with Profile.jsx)
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -47,7 +49,8 @@ const Checkout = () => {
       city: addr.city || '',
       full_address: addr.full_address || addr.street || '',
       postal_code: addr.postal_code || '',
-      phone: addr.phone || ''
+      phone: addr.phone || '',
+      payment_method: formData.payment_method
     });
   };
 
@@ -79,12 +82,19 @@ const Checkout = () => {
           full_address: formData.full_address,
           postal_code: formData.postal_code,
           phone: formData.phone
-        }
+        },
+        payment_method: formData.payment_method // NEW LINE
       };
 
       const paymentData = await createOrderAndPay(checkoutPayload);
       clearCart();
-      navigate(`/card-to-card?orderId=${paymentData.order_id}&amount=${paymentData.total_price}`);
+      
+      // NEW LOGIC: Redirect based on payment method
+      if (formData.payment_method === 'cash_on_delivery') {
+        navigate(`/profile?tab=orders&success=cod`);
+      } else {
+        navigate(`/card-to-card?orderId=${paymentData.order_id}&amount=${paymentData.total_price}`);
+      }
     } catch (err) {
       console.error("Checkout error:", err);
       setError(err.message || 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.');
@@ -129,7 +139,6 @@ const Checkout = () => {
           <form onSubmit={handleSubmit} className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 md:p-6 h-fit">
             <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10 flex items-center gap-2"><FiTruck className="text-primary" /> اطلاعات ارسال سفارش</h2>
             
-            {/* Single Address Selector at the Top */}
             {savedAddresses.length > 0 && (
               <div className="mb-4 md:mb-6 p-3 md:p-4 bg-primary/5 border border-primary/20 rounded-xl">
                 <label className="block text-sm font-medium text-primary mb-2">انتخاب آدرس از پروفایل</label>
@@ -139,7 +148,7 @@ const Checkout = () => {
                     if (addr) {
                       handleAddressSelect(addr);
                     } else {
-                      setFormData({ province: '', city: '', full_address: '', postal_code: '', phone: '' });
+                      setFormData({ province: '', city: '', full_address: '', postal_code: '', phone: '', payment_method: formData.payment_method });
                     }
                   }}
                   className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition appearance-none"
@@ -176,6 +185,23 @@ const Checkout = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">شماره تماس</label>
                 <input type="text" name="phone" required value={formData.phone} onChange={handleChange} autoComplete="off" className="w-full bg-white/[0.025] border border-white/10 rounded-xl px-3 py-2.5 md:px-4 md:py-3 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition" dir="ltr" placeholder="۰۹۱۲۳۵۶۷۸۹" />
+              </div>
+            </div>
+
+            {/* NEW PAYMENT METHOD UI */}
+            <div className="mb-6 md:mb-8">
+              <label className="block text-sm font-medium text-gray-400 mb-3">روش پرداخت</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition ${formData.payment_method === 'card_to_card' ? 'bg-primary/10 border-primary' : 'bg-white/[0.025] border-white/10 hover:border-white/30'}`}>
+                  <input type="radio" name="payment_method" value="card_to_card" checked={formData.payment_method === 'card_to_card'} onChange={handleChange} className="hidden" />
+                  <FiCreditCard className={`w-6 h-6 ${formData.payment_method === 'card_to_card' ? 'text-primary' : 'text-gray-500'}`} />
+                  <span className="font-bold text-white">کارت به کارت</span>
+                </label>
+                <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition ${formData.payment_method === 'cash_on_delivery' ? 'bg-primary/10 border-primary' : 'bg-white/[0.025] border-white/10 hover:border-white/30'}`}>
+                  <input type="radio" name="payment_method" value="cash_on_delivery" checked={formData.payment_method === 'cash_on_delivery'} onChange={handleChange} className="hidden" />
+                  <FiTruck className={`w-6 h-6 ${formData.payment_method === 'cash_on_delivery' ? 'text-primary' : 'text-gray-500'}`} />
+                  <span className="font-bold text-white">پرداخت درب منزل</span>
+                </label>
               </div>
             </div>
 

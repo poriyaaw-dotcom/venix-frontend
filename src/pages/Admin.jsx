@@ -1,7 +1,7 @@
 import toast from 'react-hot-toast';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar, FiSettings } from 'react-icons/fi';
+import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar, FiSettings, FiTruck, FiPrinter } from 'react-icons/fi';
 
 const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
 
@@ -21,6 +21,7 @@ const Admin = () => {
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [newBrandName, setNewBrandName] = useState('');
+  const [selectedBrandCategory, setSelectedBrandCategory] = useState(''); 
   const [bankInfo, setBankInfo] = useState({ bank_name: '', account_holder_name: '', card_number: '', sheba_number: '' });
   const [isEditingBank, setIsEditingBank] = useState(false);
   
@@ -33,6 +34,7 @@ const Admin = () => {
     total_orders: 0, pending_orders: 0, paid_orders: 0,
     processing_orders: 0, shipped_orders: 0, deactivated_products: 0
   });
+  const [monthlySales, setMonthlySales] = useState([]);
 
   const [approvingId, setApprovingId] = useState(null);
   const [selectedGroup, setSelectedGroup] = useState('VISITOR');
@@ -46,10 +48,16 @@ const Admin = () => {
   const imageUrlRef = useRef('');
   
   const [productForm, setProductForm] = useState({
-    title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '',
+    title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '',
     variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
     specifications: ['']
   });
+
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatSlug, setNewCatSlug] = useState('');
+
+  const filteredBrandsForProduct = productForm.category_id ? brands.filter(b => b.category_id == productForm.category_id) : [];
+  const filteredBrandsForTab = selectedBrandCategory ? brands.filter(b => b.category_id == selectedBrandCategory) : brands;
 
   useEffect(() => {
     setIsAddProductOpen(false);
@@ -100,8 +108,10 @@ const Admin = () => {
           const res = await fetch(`${API_BASE_URL}/admin/orders`, { headers });
           if (res.ok) setOrders(await res.json());
         } else if (activeTab === 'brands') {
-          const res = await fetch(`${API_BASE_URL}/admin/brands`, { headers });
-          if (res.ok) setBrands(await res.json());
+          const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers });
+          if (resCats.ok) setCategories(await resCats.json());
+          const resBrands = await fetch(`${API_BASE_URL}/admin/brands`, { headers });
+          if (resBrands.ok) setBrands(await resBrands.json());
         } else if (activeTab === 'bank-info') {
           fetchBankInfo();
         } else if (activeTab === 'categories') {
@@ -113,6 +123,9 @@ const Admin = () => {
         } else if (activeTab === 'blogs') {
           const res = await fetch(`${API_BASE_URL}/blog/admin`, { headers });
           if (res.ok) setBlogs(await res.json());
+        } else if (activeTab === 'reports') {
+          const res = await fetch(`${API_BASE_URL}/admin/reports/monthly-sales`, { headers });
+          if (res.ok) setMonthlySales(await res.json());
         }
       } catch (error) { console.error(error); }
     };
@@ -143,260 +156,135 @@ const Admin = () => {
     }
   };
 
-  // ✅ FIXED: Variant names now save on the first try for new products
   const handleCreateOrUpdateProduct = async () => {
-    if (uploadingImage) {
-      toast.error('لطفاً صبر کنید تا آپلود تصویر تکمیل شود...');
-      return;
-    }
+    if (uploadingImage) { toast.error('لطفاً صبر کنید تا آپلود تصویر تکمیل شود...'); return; }
+    if (!productForm.category_id) { toast.error('انتخاب دسته‌بندی اجباری است!'); return; }
+    
     const token = localStorage.getItem('token');
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
     try {
       let productId = editingProduct ? editingProduct.id : null;
       const cleanSpecs = productForm.specifications.filter(s => s.trim() !== '');
 
+      const basePayload = {
+        title: productForm.title, title_en: productForm.title_en, slug: productForm.slug,
+        description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
+        brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
+        category_id: parseInt(productForm.category_id),
+        specifications: cleanSpecs
+      };
+
       if (!editingProduct) {
-        // 1. Create the base product
-        const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { 
-          method: 'POST', headers, 
-          body: JSON.stringify({ 
-            title: productForm.title, title_en: productForm.title_en, 
-            description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
-            brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
-            category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
-            specifications: cleanSpecs
-          }) 
-        });
+        const res1 = await fetch(`${API_BASE_URL}/admin/products/`, { method: 'POST', headers, body: JSON.stringify(basePayload) });
         if (!res1.ok) throw new Error('خطا در ایجاد محصول');
         const productData = await res1.json();
         productId = productData.id;
 
-        // ✅ FIX: Immediately save variants using the working PUT endpoint
         await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
           method: 'PUT', headers,
-          body: JSON.stringify({
-            variants: productForm.variants.map(v => ({
-              sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              price_normal: parseFloat(v.price_normal) || 0,
-              price_visitor: parseFloat(v.price_visitor) || 0,
-              price_shop_owner: parseFloat(v.price_shop_owner) || 0,
-              price_wholesale: parseFloat(v.price_wholesale) || 0,
-              discount_percent: parseInt(v.discount_percent) || 0,
-              stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),
-              attributes_text: v.attributes_text || '',
-              selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
-            }))
-          })
+          body: JSON.stringify({ variants: productForm.variants.map(v => ({
+            sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            price_normal: parseFloat(v.price_normal) || 0, price_visitor: parseFloat(v.price_visitor) || 0,
+            price_shop_owner: parseFloat(v.price_shop_owner) || 0, price_wholesale: parseFloat(v.price_wholesale) || 0,
+            discount_percent: parseInt(v.discount_percent) || 0,
+            stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),
+            attributes_text: v.attributes_text || '', selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
+          }))})
         });
       } else {
-        // 2. Update existing product
         await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
           method: 'PUT', headers,
-          body: JSON.stringify({
-            title: productForm.title, title_en: productForm.title_en,
-            description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
-            brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
-            category_id: productForm.category_id ? parseInt(productForm.category_id) : null,
-            specifications: cleanSpecs,
-            variants: productForm.variants.map(v => ({
-              id: v.id,
-              sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              price_normal: parseFloat(v.price_normal) || 0,
-              price_visitor: parseFloat(v.price_visitor) || 0,
-              price_shop_owner: parseFloat(v.price_shop_owner) || 0,
-              price_wholesale: parseFloat(v.price_wholesale) || 0,
-              discount_percent: parseInt(v.discount_percent) || 0,
-              stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),
-              attributes_text: v.attributes_text || '',
-              selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
-            }))
-          })
+          body: JSON.stringify({ ...basePayload, variants: productForm.variants.map(v => ({
+            id: v.id, sku: v.sku || `VAR-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            price_normal: parseFloat(v.price_normal) || 0, price_visitor: parseFloat(v.price_visitor) || 0,
+            price_shop_owner: parseFloat(v.price_shop_owner) || 0, price_wholesale: parseFloat(v.price_wholesale) || 0,
+            discount_percent: parseInt(v.discount_percent) || 0,
+            stock_quantity: v.stock_quantity === '' || v.stock_quantity === null || v.stock_quantity === undefined ? 0 : parseInt(v.stock_quantity),
+            attributes_text: v.attributes_text || '', selectedValueIds: v.selectedValueIds.filter(id => typeof id === 'number' || typeof id === 'string')
+          }))})
         });
       }
 
       toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
-      setIsAddProductOpen(false);
-      setEditingProduct(null);
-      setUploadedImageUrl('');
-      imageUrlRef.current = '';
-      setProductForm({ 
-        title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', 
-        variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
-        specifications: [''] 
-      });
+      setIsAddProductOpen(false); setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = '';
+      setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] });
       
       const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
-      if (resList.ok) {
-        const dataList = await resList.json();
-        const items = Array.isArray(dataList) ? dataList : (dataList.items || []);
-        setProductsList(items);
-        setTotalPages(dataList.total_pages || 1);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('خطای شبکه: ' + error.message);
-    }
+      if (resList.ok) { const dataList = await resList.json(); setProductsList(Array.isArray(dataList) ? dataList : (dataList.items || [])); setTotalPages(dataList.total_pages || 1); }
+    } catch (error) { console.error(error); toast.error('خطای شبکه: ' + error.message); }
   };
 
   const handleImageUpload = async (file, setUrlFunc) => {
-    if (!file) return;
-    setUploadingImage(true);
-    const formData = new FormData();
-    formData.append('file', file);
+    if (!file) return; setUploadingImage(true);
+    const formData = new FormData(); formData.append('file', file);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/upload/image`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-      if (res.ok) {
-        const data = await res.json();
-        imageUrlRef.current = data.url;
-        setUploadedImageUrl(data.url);
-        setUrlFunc(data.url);
-        toast.success('تصویر با موفقیت آپلود شد');
-      } else {
-        toast.error('خطا در آپلود تصویر');
-      }
-    } catch (error) {
-      toast.error('خطای شبکه در آپلود');
-    } finally {
-      setUploadingImage(false);
-    }
+      const res = await fetch(`${API_BASE_URL}/upload/image`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+      if (res.ok) { const data = await res.json(); imageUrlRef.current = data.url; setUploadedImageUrl(data.url); setUrlFunc(data.url); toast.success('تصویر با موفقیت آپلود شد'); }
+      else { toast.error('خطا در آپلود تصویر'); }
+    } catch (error) { toast.error('خطای شبکه در آپلود'); } finally { setUploadingImage(false); }
   };
 
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm('آیا از حذف این محصول اطمینان دارید؟')) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (resList.ok) {
-          const data = await resList.json();
-          setProductsList(data.items || []);
-          setTotalPages(data.total_pages || 1);
-        }
-      } else {
-        toast.error('خطا در حذف محصول');
-      }
-    } catch (error) {
-      toast.error('خطای شبکه');
-    }
+      const res = await fetch(`${API_BASE_URL}/admin/products/${productId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) { const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resList.ok) { const data = await resList.json(); setProductsList(data.items || []); setTotalPages(data.total_pages || 1); } }
+      else { toast.error('خطا در حذف محصول'); }
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
-  const [newCatName, setNewCatName] = useState('');
   const handleEditProduct = async (product) => {
-    setEditingProduct(product);
-    setIsAddProductOpen(true);
-    setProductTab('base');
-    
+    setEditingProduct(product); setIsAddProductOpen(true); setProductTab('base');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/products/${product.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch(`${API_BASE_URL}/admin/products/${product.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setProductForm({
-          title: data.title || '',
-          title_en: data.title_en || '',
-          description: data.description || '',
-          image_url: data.image_url || '',
-          brand_id: data.brand_id ? String(data.brand_id) : '',
-          category_id: data.category_id ? String(data.category_id) : '',
+          title: data.title || '', title_en: data.title_en || '', slug: data.slug || '', description: data.description || '', image_url: data.image_url || '',
+          brand_id: data.brand_id ? String(data.brand_id) : '', category_id: data.category_id ? String(data.category_id) : '',
           specifications: data.specifications && data.specifications.length > 0 ? data.specifications : [''],
-          variants: data.variants && data.variants.length > 0 
-            ? data.variants.map(v => ({
-                id: v.id,
-                sku: v.sku || '',
-                price_normal: String(v.price_normal || v.base_price || ''),
-                price_visitor: String(v.price_visitor || ''),
-                price_shop_owner: String(v.price_shop_owner || ''),
-                price_wholesale: String(v.price_wholesale || ''),
-                discount_percent: String(v.discount_percent || ''),
-                stock_quantity: v.stock_quantity !== null && v.stock_quantity !== undefined ? String(v.stock_quantity) : '',
-                selectedValueIds: v.attribute_value_ids || v.selectedValueIds || [],
-                attributes_text: v.attributes_text || ''
-              }))
-            : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]
+          variants: data.variants && data.variants.length > 0 ? data.variants.map(v => ({
+            id: v.id, sku: v.sku || '', price_normal: String(v.price_normal || ''), price_visitor: String(v.price_visitor || ''),
+            price_shop_owner: String(v.price_shop_owner || ''), price_wholesale: String(v.price_wholesale || ''),
+            discount_percent: String(v.discount_percent || ''), stock_quantity: v.stock_quantity !== null && v.stock_quantity !== undefined ? String(v.stock_quantity) : '',
+            selectedValueIds: v.attribute_value_ids || v.selectedValueIds || [], attributes_text: v.attributes_text || ''
+          })) : [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]
         });
-      } else {
-        toast.error('خطا در دریافت اطلاعات محصول');
-      }
-    } catch (error) {
-      console.error("Failed to load product details", error);
-      toast.error('خطای شبکه در دریافت اطلاعات محصول');
-    }
+      } else { toast.error('خطا در دریافت اطلاعات محصول'); }
+    } catch (error) { console.error("Failed to load product details", error); toast.error('خطای شبکه در دریافت اطلاعات محصول'); }
   };
 
   const handleAddCategory = async (e) => {
-    e.preventDefault();
-    if (!newCatName.trim()) return;
+    e.preventDefault(); if (!newCatName.trim()) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/categories`, {
-        method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCatName })
-      });
-      if (res.ok) {
-        setNewCatName('');
-        const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (resCats.ok) setCategories(await resCats.json());
-      }
+      const res = await fetch(`${API_BASE_URL}/admin/categories`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newCatName, slug: newCatSlug || undefined }) });
+      if (res.ok) { setNewCatName(''); setNewCatSlug(''); const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resCats.ok) setCategories(await resCats.json()); }
     } catch (error) { toast.error('خطا در افزودن دسته‌بندی'); }
   };
 
   const handleDeleteCategory = async (catId) => {
     if (!window.confirm('آیا از حذف این دسته‌بندی اطمینان دارید؟')) return;
     const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/categories/${catId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      if (res.ok) setCategories(categories.filter(c => c.id !== catId));
-      else toast.error('خطا در حذف دسته‌بندی');
-    } catch (error) { toast.error('خطای شبکه'); }
+    try { const res = await fetch(`${API_BASE_URL}/admin/categories/${catId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setCategories(categories.filter(c => c.id !== catId)); else toast.error('خطا در حذف دسته‌بندی'); } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleAddBrand = async (e) => {
-    e.preventDefault();
-    if (!newBrandName.trim()) return;
+    e.preventDefault(); if (!newBrandName.trim() || !selectedBrandCategory) { toast.error('نام برند و انتخاب دسته‌بندی اجباری است'); return; }
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/brands`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newBrandName })
-      });
-      if (res.ok) {
-        setNewBrandName('');
-        const resBrands = await fetch(`${API_BASE_URL}/admin/brands`, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (resBrands.ok) setBrands(await resBrands.json());
-      }
-    } catch (error) {
-      toast.error('خطا در افزودن برند');
-    }
+      const res = await fetch(`${API_BASE_URL}/admin/brands`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newBrandName, category_id: parseInt(selectedBrandCategory) }) });
+      if (res.ok) { setNewBrandName(''); const resBrands = await fetch(`${API_BASE_URL}/admin/brands`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resBrands.ok) setBrands(await resBrands.json()); }
+    } catch (error) { toast.error('خطا در افزودن برند'); }
   };
 
   const handleDeleteBrand = async (brandId) => {
     if (!window.confirm('آیا از حذف این برند اطمینان دارید؟')) return;
     const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/brands/${brandId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setBrands(brands.filter(b => b.id !== brandId));
-      } else {
-        toast.error('خطا در حذف برند');
-      }
-    } catch (error) {
-      toast.error('خطای شبکه');
-    }
+    try { const res = await fetch(`${API_BASE_URL}/admin/brands/${brandId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) { setBrands(brands.filter(b => b.id !== brandId)); } else { toast.error('خطا در حذف برند'); } } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleApprove = async (id) => {
@@ -578,6 +466,7 @@ const Admin = () => {
     { id: 'logs', label: 'گزارشات سیستم', icon: FiFileText },
     { id: 'reviews', label: 'مدیریت نظرات', icon: FiStar },
     { id: 'blogs', label: 'مدیریت بلاگ', icon: FiFileText },
+    { id: 'reports', label: 'گزارش فروش ماهانه', icon: FiPrinter },
     { id: 'bank-info', label: 'اطلاعات بانکی', icon: FiCreditCard },
   ];
 
@@ -588,8 +477,19 @@ const Admin = () => {
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
+      <style>{`
+        @media print {
+          aside, .no-print, nav, button, .hidden-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+          .print-container { width: 100% !important; margin: 0 !important; padding: 20px !important; background: white !important; color: black !important; box-shadow: none !important; border: none !important; }
+          .print-container h1, .print-container h2, .print-container p, .print-container td, .print-container th { color: black !important; }
+          .print-container table { width: 100%; border-collapse: collapse; }
+          .print-container th, .print-container td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        }
+      `}</style>
+
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 py-8 flex gap-6">
-        <aside className="w-[250px] shrink-0 hidden md:block">
+        <aside className="w-[250px] shrink-0 hidden md:block no-print">
           <div className="bg-white/[0.035] border border-white/10 rounded-2xl p-4 sticky top-24">
             <div className="mb-6 pb-4 border-b border-white/10"><h2 className="text-lg font-bold text-primary">پنل مدیریت</h2></div>
             <nav className="space-y-1">
@@ -605,26 +505,14 @@ const Admin = () => {
           </div>
         </aside>
 
-        <div className="flex-1 bg-white/[0.035] border border-white/10 rounded-2xl p-6 min-h-[600px] relative">
+        <div className="flex-1 bg-white/[0.035] border border-white/10 rounded-2xl p-6 min-h-[600px] relative print-container">
           {activeTab === 'dashboard' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">داشبورد مدیریت</h1>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white/[0.025] border border-white/10 rounded-2xl p-6 text-center">
-                  <FiUsers className="w-10 h-10 text-primary mx-auto mb-3" />
-                  <h3 className="text-3xl font-black text-white mb-1">{dashboardStats.total_users}</h3>
-                  <p className="text-sm text-gray-400">کل کاربران</p>
-                </div>
-                <div className="bg-white/[0.025] border border-white/10 rounded-2xl p-6 text-center">
-                  <FiPackage className="w-10 h-10 text-blue-400 mx-auto mb-3" />
-                  <h3 className="text-3xl font-black text-white mb-1">{dashboardStats.total_products}</h3>
-                  <p className="text-sm text-gray-400">کل محصولات</p>
-                </div>
-                <div className="bg-white/[0.025] border border-white/10 rounded-2xl p-6 text-center">
-                  <FiAlertCircle className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
-                  <h3 className="text-3xl font-black text-white mb-1">{dashboardStats.pending_requests}</h3>
-                  <p className="text-sm text-gray-400">درخواست‌های همکاری در انتظار</p>
-                </div>
+                <div className="bg-white/[0.025] border border-white/10 rounded-2xl p-6 text-center"><FiUsers className="w-10 h-10 text-primary mx-auto mb-3" /><h3 className="text-3xl font-black text-white mb-1">{dashboardStats.total_users}</h3><p className="text-sm text-gray-400">کل کاربران</p></div>
+                <div className="bg-white/[0.025] border border-white/10 rounded-2xl p-6 text-center"><FiPackage className="w-10 h-10 text-blue-400 mx-auto mb-3" /><h3 className="text-3xl font-black text-white mb-1">{dashboardStats.total_products}</h3><p className="text-sm text-gray-400">کل محصولات</p></div>
+                <div className="bg-white/[0.025] border border-white/10 rounded-2xl p-6 text-center"><FiAlertCircle className="w-10 h-10 text-yellow-400 mx-auto mb-3" /><h3 className="text-3xl font-black text-white mb-1">{dashboardStats.pending_requests}</h3><p className="text-sm text-gray-400">درخواست‌های همکاری در انتظار</p></div>
               </div>
               <h2 className="text-xl font-bold text-white mb-4">آمار سفارشات و محصولات</h2>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -632,10 +520,7 @@ const Admin = () => {
                 <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 text-center"><h3 className="text-2xl font-black text-yellow-400 mb-1">{dashboardStats.pending_orders}</h3><p className="text-xs text-gray-400">در انتظار پرداخت</p></div>
                 <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 text-center"><h3 className="text-2xl font-black text-green-400 mb-1">{dashboardStats.paid_orders}</h3><p className="text-xs text-gray-400">پرداخت شده</p></div>
                 <div className="bg-white/[0.025] border border-white/10 rounded-xl p-4 text-center"><h3 className="text-2xl font-black text-blue-400 mb-1">{dashboardStats.processing_orders}</h3><p className="text-xs text-gray-400">در حال پردازش</p></div>
-                <div className="bg-white/[0.025] border border-red-500/20 rounded-xl p-4 text-center cursor-pointer hover:bg-red-500/10 transition" onClick={() => { setActiveTab('products'); setShowDeactivatedOnly(true); }}>
-                  <h3 className="text-2xl font-black text-red-400 mb-1">{dashboardStats.deactivated_products}</h3>
-                  <p className="text-xs text-gray-400">محصولات غیرفعال (کلیک کنید)</p>
-                </div>
+                <div className="bg-white/[0.025] border border-red-500/20 rounded-xl p-4 text-center cursor-pointer hover:bg-red-500/10 transition" onClick={() => { setActiveTab('products'); setShowDeactivatedOnly(true); }}><h3 className="text-2xl font-black text-red-400 mb-1">{dashboardStats.deactivated_products}</h3><p className="text-xs text-gray-400">محصولات غیرفعال (کلیک کنید)</p></div>
               </div>
             </div>
           )}
@@ -643,17 +528,17 @@ const Admin = () => {
           {activeTab === 'categories' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت دسته‌بندی‌ها</h1>
-              <form onSubmit={handleAddCategory} className="flex gap-4 mb-8">
-                <input type="text" placeholder="نام دسته‌بندی جدید" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+              <form onSubmit={handleAddCategory} className="flex flex-col md:flex-row gap-4 mb-8">
+                <input type="text" placeholder="نام دسته‌بندی جدید" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
+                <input type="text" placeholder="اسلاگ (اختیاری - مثلا: vape)" value={newCatSlug} onChange={(e) => setNewCatSlug(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
                 <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن دسته‌بندی</button>
               </form>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {categories.map(cat => (
                   <div key={cat.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
                     <h3 className="font-bold text-white">{cat.name}</h3>
-                    <button onClick={() => handleDeleteCategory(cat.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
+                    <p className="text-xs text-gray-500" dir="ltr">{cat.slug}</p>
+                    <button onClick={() => handleDeleteCategory(cat.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف"><FiTrash2 /></button>
                   </div>
                 ))}
               </div>
@@ -662,18 +547,34 @@ const Admin = () => {
 
           {activeTab === 'brands' && (
             <div>
-              <h1 className="text-2xl font-bold text-white mb-6">مدیریت برندها</h1>
-              <form onSubmit={handleAddBrand} className="flex gap-4 mb-8">
-                <input type="text" placeholder="نام برند جدید" value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن برند</button>
-              </form>
+              <h1 className="text-2xl font-bold text-white mb-6">مدیریت برندها (وابسته به دسته‌بندی)</h1>
+              
+              <div className="bg-white/[0.025] border border-white/10 rounded-xl p-6 mb-8">
+                <h3 className="text-lg font-bold text-primary mb-4">افزودن برند جدید</h3>
+                <form onSubmit={handleAddBrand} className="flex flex-col md:flex-row gap-4">
+                  <select value={selectedBrandCategory} onChange={(e) => setSelectedBrandCategory(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required>
+                    <option value="">انتخاب دسته‌بندی مادر (اجباری)</option>
+                    {categories.map(c => <option key={c.id} value={c.id} className="bg-background">{c.name}</option>)}
+                  </select>
+                  <input type="text" placeholder="نام برند جدید" value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
+                  <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن برند</button>
+                </form>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-400 mb-2">فیلتر برندها بر اساس دسته‌بندی:</label>
+                <select value={selectedBrandCategory} onChange={(e) => setSelectedBrandCategory(e.target.value)} className="w-full md:w-1/2 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary">
+                  <option value="">نمایش همه برندها</option>
+                  {categories.map(c => <option key={c.id} value={c.id} className="bg-background">{c.name}</option>)}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {brands.map(brand => (
+                {filteredBrandsForTab.length === 0 ? <p className="text-gray-500 col-span-4 text-center py-10">برندی یافت نشد.</p> : filteredBrandsForTab.map(brand => (
                   <div key={brand.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
                     <h3 className="font-bold text-white">{brand.name}</h3>
-                    <button onClick={() => handleDeleteBrand(brand.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف برند">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
+                    <p className="text-xs text-gray-500">دسته: {categories.find(c => c.id === brand.category_id)?.name || 'نامشخص'}</p>
+                    <button onClick={() => handleDeleteBrand(brand.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف برند"><FiTrash2 /></button>
                   </div>
                 ))}
               </div>
@@ -682,54 +583,35 @@ const Admin = () => {
 
           {activeTab === 'products' && (
             <div>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 no-print">
                 <h1 className="text-2xl font-bold text-white">مدیریت محصولات {showDeactivatedOnly && <span className="text-red-400 text-lg">(فقط غیرفعال‌ها)</span>}</h1>
                 <div className="flex gap-2">
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
-                  <button onClick={() => { 
-                    setEditingProduct(null); 
-                    setUploadedImageUrl('');
-                    imageUrlRef.current = '';
-                    setProductForm({ title: '', title_en: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); 
-                    setIsAddProductOpen(true); 
-                    setProductTab('base'); 
-                  }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition">
-                    <FiPlus /> افزودن محصول جدید
-                  </button>
+                  <button onClick={() => { setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = ''; setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); setIsAddProductOpen(true); setProductTab('base'); }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition"><FiPlus /> افزودن محصول جدید</button>
                 </div>
               </div>
-              <div className="mb-4">
-                <div className="relative">
-                  <FiSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input type="text" placeholder="جستجوی محصول..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 text-white outline-none focus:border-primary" />
-                </div>
+              <div className="mb-4 no-print">
+                <div className="relative"><FiSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" /><input type="text" placeholder="جستجوی محصول..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 text-white outline-none focus:border-primary" /></div>
               </div>
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {filteredProducts.length === 0 ? <p className="text-gray-500 text-center py-10">محصولی یافت نشد.</p> : filteredProducts.map((p, index) => (
                   <div key={p.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-bold text-gray-500 w-6 text-center bg-white/5 rounded-full py-1">{index + 1}</span>
-                      {p.image_url && (
-                        <img src={p.image_url.startsWith('http') ? p.image_url : `https://api.venixpodshop.com${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />
-                      )}
-                      <div>
-                        <h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3>
-                        <p className="text-xs text-gray-400">{p.title_en}</p>
-                      </div>
+                      {p.image_url && <img src={p.image_url.startsWith('http') ? p.image_url : `https://api.venixpodshop.com${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />}
+                      <div><h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3><p className="text-xs text-gray-400">{p.title_en}</p></div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 no-print">
                       <span className={`text-xs px-3 py-1 rounded-lg ${p.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{p.is_active ? 'فعال' : 'غیرفعال'}</span>
                       <button onClick={() => handleEditProduct(p)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition" title="ویرایش"><FiEdit2 /></button>
                       <button onClick={() => handleDeleteProduct(p.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition" title="حذف"><FiTrash2 /></button>
-                      <button onClick={() => handleToggleProductStatus(p.id, p.is_active)} className={`p-2 rounded-lg transition ${p.is_active ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'}`} title={p.is_active ? "غیرفعال کردن" : "فعال کردن"}>
-                        {p.is_active ? <FiToggleRight size={24} /> : <FiToggleLeft size={24} />}
-                      </button>
+                      <button onClick={() => handleToggleProductStatus(p.id, p.is_active)} className={`p-2 rounded-lg transition ${p.is_active ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'}`} title={p.is_active ? "غیرفعال کردن" : "فعال کردن"}>{p.is_active ? <FiToggleRight size={24} /> : <FiToggleLeft size={24} />}</button>
                     </div>
                   </div>
                 ))}
               </div>
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-2 mt-6 no-print">
                   <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-4 py-2 rounded-xl bg-white/5 text-white disabled:opacity-50 hover:bg-white/10 transition text-sm font-bold">صفحه قبل</button>
                   <span className="text-sm text-gray-400 font-bold">صفحه {currentPage} از {totalPages}</span>
                   <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-4 py-2 rounded-xl bg-white/5 text-white disabled:opacity-50 hover:bg-white/10 transition text-sm font-bold">صفحه بعد</button>
@@ -747,15 +629,13 @@ const Admin = () => {
                     <div>
                       <h3 className="font-bold text-white">سفارش #{order.id}</h3>
                       <p className="text-xs text-gray-400">مشتری: {order.user_name} ({order.user_phone})</p>
+                      <p className="text-xs text-gray-400">
+                        روش پرداخت: {order.payment_method === 'cash_on_delivery' ? <span className="text-primary font-bold">پرداخت درب منزل</span> : 'کارت به کارت'}
+                      </p>
                       <p className="text-xs text-gray-400">{order.province}، {order.city} | {order.total_items} کالا</p>
-                      {order.bank_tracking_number && (
-                        <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                          <span>شماره پیگیری: {order.bank_tracking_number}</span>
-                          <span className="text-gray-500">({new Date(order.paid_at).toLocaleString('fa-IR')})</span>
-                        </p>
-                      )}
+                      {order.bank_tracking_number && <p className="text-xs text-green-400 mt-1 flex items-center gap-1"><span>شماره پیگیری: {order.bank_tracking_number}</span><span className="text-gray-500">({new Date(order.paid_at).toLocaleString('fa-IR')})</span></p>}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 no-print">
                       <span className={`text-xs px-3 py-1 rounded-lg ${getStatusColor(order.status)}`}>{getStatusLabel(order.status)}</span>
                       <span className="text-white font-bold">{parseFloat(order.total_price).toLocaleString()} تومان</span>
                       <button onClick={() => setSelectedOrder(order)} className="text-primary hover:text-primary/80 p-2 bg-white/5 rounded-lg"><FiEdit2 /></button>
@@ -772,30 +652,16 @@ const Admin = () => {
               <div className="space-y-4">
                 {partnerRequests.length === 0 ? <p className="text-gray-500 text-center py-10">درخواستی وجود ندارد.</p> : partnerRequests.map(req => (
                   <div key={req.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                      <h3 className="font-bold text-white">{req.business_name}</h3>
-                      <p className="text-sm text-gray-400">{req.description}</p>
-                      <div className="mt-2 flex gap-3 text-xs">
-                        <span className="bg-white/10 px-2 py-1 rounded text-primary">📞 {req.user?.phone_number || 'N/A'}</span>
-                        <span className="bg-white/10 px-2 py-1 rounded text-gray-300">👤 {req.user?.full_name || 'بدون نام'}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 w-full md:w-auto">
+                    <div><h3 className="font-bold text-white">{req.business_name}</h3><p className="text-sm text-gray-400">{req.description}</p><div className="mt-2 flex gap-3 text-xs"><span className="bg-white/10 px-2 py-1 rounded text-primary">📞 {req.user?.phone_number || 'N/A'}</span><span className="bg-white/10 px-2 py-1 rounded text-gray-300">👤 {req.user?.full_name || 'بدون نام'}</span></div></div>
+                    <div className="flex gap-2 w-full md:w-auto no-print">
                       {approvingId === req.id ? (
                         <div className="flex gap-2 w-full md:w-auto items-center">
-                          <select value={selectedGroup} onChange={(e) => setSelectedGroup(e.target.value)} className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-primary">
-                            <option value="VISITOR">ویزیتور</option>
-                            <option value="SHOP_OWNER">مغازه‌دار</option>
-                            <option value="WHOLESALE">عمده‌فروش</option>
-                          </select>
+                          <select value={selectedGroup} onChange={(e) => setSelectedGroup(e.target.value)} className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-primary"><option value="VISITOR">ویزیتور</option><option value="SHOP_OWNER">مغازه‌دار</option><option value="WHOLESALE">عمده‌فروش</option></select>
                           <button onClick={() => handleApprove(req.id)} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs hover:bg-green-600 font-bold">تایید نهایی</button>
                           <button onClick={() => setApprovingId(null)} className="px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs hover:bg-gray-700">انصراف</button>
                         </div>
                       ) : (
-                        <>
-                          <button onClick={() => setApprovingId(req.id)} className="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg text-xs hover:bg-green-500/20 border border-green-500/20 font-bold">تایید و انتخاب گروه</button>
-                          <button onClick={() => handleReject(req.id)} className="px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg text-xs hover:bg-red-500/20 border border-red-500/20 font-bold">رد درخواست</button>
-                        </>
+                        <><button onClick={() => setApprovingId(req.id)} className="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg text-xs hover:bg-green-500/20 border border-green-500/20 font-bold">تایید و انتخاب گروه</button><button onClick={() => handleReject(req.id)} className="px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg text-xs hover:bg-red-500/20 border border-red-500/20 font-bold">رد درخواست</button></>
                       )}
                     </div>
                   </div>
@@ -810,29 +676,13 @@ const Admin = () => {
               <div className="bg-white/[0.025] border border-white/10 rounded-xl p-6 max-w-2xl">
                 {!isEditingBank ? (
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                      <h3 className="text-lg font-bold text-primary">اطلاعات فعلی</h3>
-                      <button onClick={() => setIsEditingBank(true)} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition">ویرایش اطلاعات</button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div><p className="text-gray-400">نام بانک</p><p className="text-white font-bold">{bankInfo.bank_name || 'تنظیم نشده'}</p></div>
-                      <div><p className="text-gray-400">نام صاحب حساب</p><p className="text-white font-bold">{bankInfo.account_holder_name || 'تنظیم نشده'}</p></div>
-                      <div><p className="text-gray-400">شماره کارت</p><p className="text-white font-bold font-mono" dir="ltr">{bankInfo.card_number || '---'}</p></div>
-                      <div><p className="text-gray-400">شماره شبا</p><p className="text-white font-bold font-mono" dir="ltr">{bankInfo.sheba_number || '---'}</p></div>
-                    </div>
+                    <div className="flex justify-between items-center border-b border-white/10 pb-4"><h3 className="text-lg font-bold text-primary">اطلاعات فعلی</h3><button onClick={() => setIsEditingBank(true)} className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition no-print">ویرایش اطلاعات</button></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm"><div><p className="text-gray-400">نام بانک</p><p className="text-white font-bold">{bankInfo.bank_name || 'تنظیم نشده'}</p></div><div><p className="text-gray-400">نام صاحب حساب</p><p className="text-white font-bold">{bankInfo.account_holder_name || 'تنظیم نشده'}</p></div><div><p className="text-gray-400">شماره کارت</p><p className="text-white font-bold font-mono" dir="ltr">{bankInfo.card_number || '---'}</p></div><div><p className="text-gray-400">شماره شبا</p><p className="text-white font-bold font-mono" dir="ltr">{bankInfo.sheba_number || '---'}</p></div></div>
                   </div>
                 ) : (
                   <form onSubmit={handleSaveBankInfo} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <input required placeholder="نام بانک (مثال: بانک رسالت)" value={bankInfo.bank_name} onChange={e => setBankInfo({...bankInfo, bank_name: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                      <input required placeholder="نام صاحب حساب" value={bankInfo.account_holder_name} onChange={e => setBankInfo({...bankInfo, account_holder_name: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                      <input required placeholder="شماره کارت (16 رقم)" value={bankInfo.card_number} onChange={e => setBankInfo({...bankInfo, card_number: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary font-mono" dir="ltr" maxLength="16" />
-                      <input required placeholder="شماره شبا (IR...)" value={bankInfo.sheba_number} onChange={e => setBankInfo({...bankInfo, sheba_number: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary font-mono" dir="ltr" />
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                      <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition">ذخیره تغییرات</button>
-                      <button type="button" onClick={() => { setIsEditingBank(false); fetchBankInfo(); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button>
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input required placeholder="نام بانک (مثال: بانک رسالت)" value={bankInfo.bank_name} onChange={e => setBankInfo({...bankInfo, bank_name: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" /><input required placeholder="نام صاحب حساب" value={bankInfo.account_holder_name} onChange={e => setBankInfo({...bankInfo, account_holder_name: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" /><input required placeholder="شماره کارت (16 رقم)" value={bankInfo.card_number} onChange={e => setBankInfo({...bankInfo, card_number: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary font-mono" dir="ltr" maxLength="16" /><input required placeholder="شماره شبا (IR...)" value={bankInfo.sheba_number} onChange={e => setBankInfo({...bankInfo, sheba_number: e.target.value})} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary font-mono" dir="ltr" /></div>
+                    <div className="flex gap-3 pt-4 no-print"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition">ذخیره تغییرات</button><button type="button" onClick={() => { setIsEditingBank(false); fetchBankInfo(); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button></div>
                   </form>
                 )}
               </div>
@@ -844,11 +694,7 @@ const Admin = () => {
               <h1 className="text-2xl font-bold text-white mb-6">گزارشات سیستم</h1>
               <div className="space-y-2 max-h-[600px] overflow-y-auto">
                 {logs.length === 0 ? <p className="text-gray-500 text-center py-10">گزارشی وجود ندارد.</p> : logs.map(log => (
-                  <div key={log.id} className="bg-white/[0.025] border border-white/10 rounded-lg p-3 text-sm flex justify-between">
-                    <span className="text-primary font-bold">{log.action}</span>
-                    <span className="text-gray-400">{log.target_type} #{log.target_id}</span>
-                    <span className="text-gray-500 text-xs">{new Date(log.created_at).toLocaleString('fa-IR')}</span>
-                  </div>
+                  <div key={log.id} className="bg-white/[0.025] border border-white/10 rounded-lg p-3 text-sm flex justify-between"><span className="text-primary font-bold">{log.action}</span><span className="text-gray-400">{log.target_type} #{log.target_id}</span><span className="text-gray-500 text-xs">{new Date(log.created_at).toLocaleString('fa-IR')}</span></div>
                 ))}
               </div>
             </div>
@@ -858,49 +704,19 @@ const Admin = () => {
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت نظرات کاربران</h1>
               <div className="space-y-4">
-                {pendingReviews.length === 0 ? (
-                  <p className="text-gray-500 text-center py-10 bg-white/[0.025] border border-white/10 rounded-xl">هیچ نظر در انتظار تاییدی وجود ندارد.</p>
-                ) : (
-                  pendingReviews.map(review => (
-                    <div key={review.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-yellow-400 font-bold text-sm">امتیاز: {review.rating} از ۵</span>
-                          <span className="text-xs text-gray-500">|</span>
-                          <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleString('fa-IR')}</span>
-                        </div>
-                        <p className="text-sm text-gray-300 leading-relaxed">{review.comment || 'بدون متن'}</p>
-                        <p className="text-xs text-primary mt-2">کاربر ID: {review.user_id}</p>
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <button onClick={async () => {
-                          const token = localStorage.getItem('token');
-                          try {
-                            const res = await fetch(`${API_BASE_URL}/reviews/${review.id}/approve`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-                            if (res.ok) {
-                              setPendingReviews(pendingReviews.filter(r => r.id !== review.id));
-                              toast.success('نظر با موفقیت تایید شد');
-                            }
-                          } catch (err) { toast.error('خطا در تایید نظر'); }
-                        }} className="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg text-sm font-bold hover:bg-green-500/30 transition flex items-center gap-2">
-                          <FiCheck /> تایید
-                        </button>
-                        <button onClick={async () => {
-                          const token = localStorage.getItem('token');
-                          try {
-                            const res = await fetch(`${API_BASE_URL}/reviews/${review.id}/reject`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-                            if (res.ok) {
-                              setPendingReviews(pendingReviews.filter(r => r.id !== review.id));
-                              toast.success('نظر رد و حذف شد');
-                            }
-                          } catch (err) { toast.error('خطا در رد نظر'); }
-                        }} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-bold hover:bg-red-500/30 transition flex items-center gap-2">
-                          <FiX /> رد کردن
-                        </button>
-                      </div>
+                {pendingReviews.length === 0 ? <p className="text-gray-500 text-center py-10 bg-white/[0.025] border border-white/10 rounded-xl">هیچ نظر در انتظار تاییدی وجود ندارد.</p> : pendingReviews.map(review => (
+                  <div key={review.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2"><span className="text-yellow-400 font-bold text-sm">امتیاز: {review.rating} از ۵</span><span className="text-xs text-gray-500">|</span><span className="text-xs text-primary font-bold">محصول: {review.product_title || 'نامشخص'}</span><span className="text-xs text-gray-500">|</span><span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleString('fa-IR')}</span></div>
+                      <p className="text-sm text-gray-300 leading-relaxed">{review.comment || 'بدون متن'}</p>
+                      <p className="text-xs text-primary mt-2">کاربر ID: {review.user_id}</p>
                     </div>
-                  ))
-                )}
+                    <div className="flex gap-2 shrink-0 no-print">
+                      <button onClick={async () => { const token = localStorage.getItem('token'); try { const res = await fetch(`${API_BASE_URL}/reviews/${review.id}/approve`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) { setPendingReviews(pendingReviews.filter(r => r.id !== review.id)); toast.success('نظر با موفقیت تایید شد'); } } catch (err) { toast.error('خطا در تایید نظر'); } }} className="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg text-sm font-bold hover:bg-green-500/30 transition flex items-center gap-2"><FiCheck /> تایید</button>
+                      <button onClick={async () => { const token = localStorage.getItem('token'); try { const res = await fetch(`${API_BASE_URL}/reviews/${review.id}/reject`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) { setPendingReviews(pendingReviews.filter(r => r.id !== review.id)); toast.success('نظر رد و حذف شد'); } } catch (err) { toast.error('خطا در رد نظر'); } }} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-bold hover:bg-red-500/30 transition flex items-center gap-2"><FiX /> رد کردن</button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -911,236 +727,106 @@ const Admin = () => {
               <form onSubmit={handleAddBlog} className="bg-white/[0.025] border border-white/10 rounded-xl p-6 mb-8 space-y-4">
                 <h3 className="text-lg font-bold text-primary mb-4">{editingBlogId ? 'ویرایش بلاگ' : 'افزودن بلاگ جدید'}</h3>
                 <input type="text" placeholder="عنوان بلاگ" value={newBlog.title} onChange={e => setNewBlog({...newBlog, title: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
-                <div className="relative">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-black/20 hover:bg-white/5 transition">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                      <p className="text-xs text-gray-400">{newBlog.image_url ? 'تصویر انتخاب شد' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>
-                      {newBlog.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{newBlog.image_url}</p>}
-                    </div>
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog(prev => ({...prev, image_url: url}))); e.target.value = ''; }} disabled={uploadingImage} />
-                  </label>
-                  {uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}
-                </div>
+                <div className="relative"><label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-black/20 hover:bg-white/5 transition"><div className="flex flex-col items-center justify-center pt-5 pb-6"><svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><p className="text-xs text-gray-400">{newBlog.image_url ? 'تصویر انتخاب شد' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>{newBlog.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{newBlog.image_url}</p>}</div><input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog(prev => ({...prev, image_url: url}))); e.target.value = ''; }} disabled={uploadingImage} /></label>{uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}</div>
                 <textarea placeholder="متن بلاگ" value={newBlog.content} onChange={e => setNewBlog({...newBlog, content: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" required />
-                <div className="flex gap-3">
-                  <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">{editingBlogId ? 'بروزرسانی' : 'انتشار بلاگ'}</button>
-                  {editingBlogId && (
-                    <button type="button" onClick={() => { setEditingBlogId(null); setNewBlog({ title: '', content: '', image_url: '' }); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button>
-                  )}
-                </div>
+                <div className="flex gap-3 no-print"><button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">{editingBlogId ? 'بروزرسانی' : 'انتشار بلاگ'}</button>{editingBlogId && <button type="button" onClick={() => { setEditingBlogId(null); setNewBlog({ title: '', content: '', image_url: '' }); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button>}</div>
               </form>
               <div className="space-y-4">
                 {blogs.length === 0 ? <p className="text-gray-500 text-center py-10">بلاگی یافت نشد.</p> : blogs.map(blog => (
                   <div key={blog.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      {blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}
-                      <div>
-                        <h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3>
-                        <p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs px-3 py-1 rounded-lg ${blog.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{blog.is_active ? 'فعال' : 'غیرفعال'}</span>
-                      <button onClick={() => handleEditBlog(blog)} className="p-2 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition" title="ویرایش"><FiEdit2 /></button>
-                      <button onClick={() => handleToggleBlogStatus(blog.id, blog.is_active)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition" title="تغییر وضعیت"><FiToggleRight size={24} /></button>
-                      <button onClick={() => handleDeleteBlog(blog.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"><FiTrash2 /></button>
-                    </div>
+                    <div className="flex items-center gap-4">{blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}<div><h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3><p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p></div></div>
+                    <div className="flex items-center gap-3 no-print"><span className={`text-xs px-3 py-1 rounded-lg ${blog.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{blog.is_active ? 'فعال' : 'غیرفعال'}</span><button onClick={() => handleEditBlog(blog)} className="p-2 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition" title="ویرایش"><FiEdit2 /></button><button onClick={() => handleToggleBlogStatus(blog.id, blog.is_active)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition" title="تغییر وضعیت"><FiToggleRight size={24} /></button><button onClick={() => handleDeleteBlog(blog.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"><FiTrash2 /></button></div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
+          {activeTab === 'reports' && (
+            <div>
+              <div className="flex justify-between items-center mb-6 no-print">
+                <h1 className="text-2xl font-bold text-white">گزارش فروش ماهانه</h1>
+                <button onClick={() => window.print()} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition"><FiPrinter /> چاپ گزارش</button>
+              </div>
+              <div className="bg-white text-gray-900 rounded-xl p-6 overflow-x-auto">
+                <h2 className="text-xl font-bold mb-4 text-center border-b pb-4">گزارش فروش ماه جاری - {new Date().toLocaleDateString('fa-IR')}</h2>
+                {monthlySales.length === 0 ? (
+                  <p className="text-center text-gray-500 py-10">هیچ فروشی در این ماه ثبت نشده است.</p>
+                ) : (
+                  <table className="w-full text-right border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 border-b">
+                        <th className="p-3 font-bold">نام محصول</th>
+                        <th className="p-3 font-bold">تعداد فروش</th>
+                        <th className="p-3 font-bold">مجموع درآمد (تومان)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthlySales.map((item, idx) => (
+                        <tr key={idx} className="border-b hover:bg-gray-50">
+                          <td className="p-3">{item.product_title}</td>
+                          <td className="p-3 font-bold">{item.total_quantity}</td>
+                          <td className="p-3 font-bold text-green-600">{item.total_revenue.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      <tr className="bg-gray-100 font-black">
+                        <td className="p-3">مجموع کل</td>
+                        <td className="p-3">{monthlySales.reduce((acc, curr) => acc + curr.total_quantity, 0)}</td>
+                        <td className="p-3 text-green-700">{monthlySales.reduce((acc, curr) => acc + curr.total_revenue, 0).toLocaleString()} تومان</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          )}
+
           {isAddProductOpen && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl no-print">
               <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-                  <h2 className="text-xl font-bold text-white">{editingProduct ? 'ویرایش محصول' : 'افزودن محصول جدید'}</h2>
-                  <button onClick={() => { setIsAddProductOpen(false); setEditingProduct(null); }} className="text-gray-400 hover:text-white"><FiX size={24} /></button>
-                </div>
-
-                <div className="flex border-b border-white/10 mb-6">
-                  <button onClick={() => setProductTab('base')} className={`py-3 px-6 font-bold transition ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button>
-                  <button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. مشخصات فنی</button>
-                  <button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button>
-                </div>
-
+                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4"><h2 className="text-xl font-bold text-white">{editingProduct ? 'ویرایش محصول' : 'افزودن محصول جدید'}</h2><button onClick={() => { setIsAddProductOpen(false); setEditingProduct(null); }} className="text-gray-400 hover:text-white"><FiX size={24} /></button></div>
+                <div className="flex border-b border-white/10 mb-6"><button onClick={() => setProductTab('base')} className={`py-3 px-6 font-bold transition ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button><button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. مشخصات فنی</button><button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button></div>
                 <div className="flex-1 overflow-y-auto pr-2 mb-6">
                   {productTab === 'base' && (
                     <div className="space-y-4">
                       <input type="text" placeholder="نام محصول" value={productForm.title} onChange={e => setProductForm(prev => ({...prev, title: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                      <input type="text" placeholder="نام محصول (انگلیسی)" value={productForm.title_en} onChange={e => setProductForm(prev => ({...prev, title_en: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
-                      <select value={productForm.category_id} onChange={e => setProductForm(prev => ({...prev, category_id: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4">
-                        <option value="">انتخاب دسته‌بندی (اختیاری)</option>
+                      <div className="grid grid-cols-2 gap-4">
+                        <input type="text" placeholder="نام محصول (انگلیسی)" value={productForm.title_en} onChange={e => setProductForm(prev => ({...prev, title_en: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
+                        <input type="text" placeholder="اسلاگ (اختیاری - مثلا: iphone-15)" value={productForm.slug} onChange={e => setProductForm(prev => ({...prev, slug: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
+                      </div>
+                      <select value={productForm.category_id} onChange={e => setProductForm(prev => ({...prev, category_id: e.target.value, brand_id: ''}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none mb-4" required>
+                        <option value="">انتخاب دسته‌بندی (اجباری)</option>
                         {categories.map(c => <option key={c.id} value={c.id} className="text-black">{c.name}</option>)}
                       </select>
-                      <select value={productForm.brand_id} onChange={e => setProductForm(prev => ({...prev, brand_id: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none">
-                        <option value="">انتخاب برند (اختیاری)</option>
-                        {brands.map(b => <option key={b.id} value={b.id} className="text-black">{b.name}</option>)}
+                      <select value={productForm.brand_id} onChange={e => setProductForm(prev => ({...prev, brand_id: e.target.value}))} disabled={!productForm.category_id} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary appearance-none disabled:opacity-50 disabled:cursor-not-allowed">
+                        <option value="">{productForm.category_id ? 'انتخاب برند (اختیاری)' : 'ابتدا دسته‌بندی را انتخاب کنید'}</option>
+                        {filteredBrandsForProduct.map(b => <option key={b.id} value={b.id} className="text-black">{b.name}</option>)}
                       </select>
-                      <div className="relative">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition">
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <FiImage className="w-8 h-8 mb-2 text-gray-400" />
-                            <p className="text-xs text-gray-400">{productForm.image_url ? 'تصویر انتخاب شد (برای تغییر کلیک کنید)' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>
-                            {productForm.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{productForm.image_url}</p>}
-                          </div>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], (url) => setProductForm(prev => ({...prev, image_url: url})))} disabled={uploadingImage} />
-                        </label>
-                        {uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}
-                      </div>
+                      <div className="relative"><label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition"><div className="flex flex-col items-center justify-center pt-5 pb-6"><FiImage className="w-8 h-8 mb-2 text-gray-400" /><p className="text-xs text-gray-400">{productForm.image_url ? 'تصویر انتخاب شد (برای تغییر کلیک کنید)' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>{productForm.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{productForm.image_url}</p>}</div><input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], (url) => setProductForm(prev => ({...prev, image_url: url})))} disabled={uploadingImage} /></label>{uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}</div>
                       <textarea placeholder="توضیحات" value={productForm.description} onChange={e => setProductForm(prev => ({...prev, description: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" />
                     </div>
                   )}
-
                   {productTab === 'attrs' && (
-                    <div className="space-y-4">
-                      <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                        <h4 className="text-sm font-bold text-primary mb-4">مشخصات فنی محصول (نامحدود)</h4>
-                        <p className="text-xs text-gray-400 mb-4">هر مشخصه را در یک خط جداگانه وارد کنید (مثال: باتری 20000 میلی‌آمپر)</p>
-                        {productForm.specifications.map((spec, index) => (
-                          <div key={index} className="flex gap-2 mb-2">
-                            <input type="text" value={spec} onChange={(e) => { const newSpecs = [...productForm.specifications]; newSpecs[index] = e.target.value; setProductForm(prev => ({...prev, specifications: newSpecs})); }} className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" placeholder={`مشخصه ${index + 1}...`} />
-                            <button onClick={() => { const newSpecs = productForm.specifications.filter((_, i) => i !== index); setProductForm(prev => ({...prev, specifications: newSpecs})); }} className="text-red-400 hover:text-red-300 px-3"><FiTrash2 /></button>
-                          </div>
-                        ))}
-                        <button onClick={() => setProductForm(prev => ({...prev, specifications: [...prev.specifications, '']}))} className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"><FiPlus /> افزودن مشخصه جدید</button>
-                      </div>
-                    </div>
+                    <div className="space-y-4"><div className="bg-white/5 rounded-xl p-4 border border-white/5"><h4 className="text-sm font-bold text-primary mb-4">مشخصات فنی محصول (نامحدود)</h4><p className="text-xs text-gray-400 mb-4">هر مشخصه را در یک خط جداگانه وارد کنید (مثال: باتری 20000 میلی‌آمپر)</p>{productForm.specifications.map((spec, index) => (<div key={index} className="flex gap-2 mb-2"><input type="text" value={spec} onChange={(e) => { const newSpecs = [...productForm.specifications]; newSpecs[index] = e.target.value; setProductForm(prev => ({...prev, specifications: newSpecs})); }} className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" placeholder={`مشخصه ${index + 1}...`}/><button onClick={() => { const newSpecs = productForm.specifications.filter((_, i) => i !== index); setProductForm(prev => ({...prev, specifications: newSpecs})); }} className="text-red-400 hover:text-red-300 px-3"><FiTrash2 /></button></div>))}<button onClick={() => setProductForm(prev => ({...prev, specifications: [...prev.specifications, '']}))} className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"><FiPlus /> افزودن مشخصه جدید</button></div></div>
                   )}
-
                   {productTab === 'variants' && (
-                    <div className="space-y-4">
-                      {productForm.variants.map((variant, vIdx) => (
-                        <div key={vIdx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
-                          <div className="flex justify-between items-center">
-                            <h4 className="text-sm font-bold text-primary">واریانت #{vIdx + 1}</h4>
-                            {productForm.variants.length > 1 && (
-                              <button onClick={() => { const newVariants = productForm.variants.filter((_, i) => i !== vIdx); setProductForm(prev => ({...prev, variants: newVariants})); }} className="text-red-400 hover:text-red-300"><FiTrash2 /></button>
-                            )}
-                          </div>
-                          
-                          <div>
-                            <label className="text-xs text-gray-400 block mb-1">ویژگی‌های این واریانت (مثال: قرمز، 500ml)</label>
-                            <input 
-                              type="text" 
-                              value={variant.attributes_text || ''} 
-                              onChange={(e) => {
-                                const newVariants = [...productForm.variants];
-                                newVariants[vIdx].attributes_text = e.target.value;
-                                setProductForm(prev => ({...prev, variants: newVariants}));
-                              }} 
-                              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-primary" 
-                              placeholder="قرمز، آبی، 500 میلی‌لیتر" 
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">قیمت کاربر عادی</label>
-                              <input type="number" placeholder="تومان" value={variant.price_normal || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_normal = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">قیمت ویزیتور</label>
-                              <input type="number" placeholder="تومان" value={variant.price_visitor || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_visitor = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">قیمت مغازه‌دار</label>
-                              <input type="number" placeholder="تومان" value={variant.price_shop_owner || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_shop_owner = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">قیمت عمده‌فروش</label>
-                              <input type="number" placeholder="تومان" value={variant.price_wholesale || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_wholesale = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">درصد تخفیف (%)</label>
-                              <input type="number" min="0" max="100" placeholder="مثال: 20" value={variant.discount_percent || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].discount_percent = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-400 mb-1">موجودی انبار</label>
-                              <input type="number" placeholder="موجودی" value={variant.stock_quantity || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].stock_quantity = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <button onClick={() => setProductForm(prev => ({...prev, variants: [...prev.variants, { price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]}))} className="w-full py-3 border-2 border-dashed border-white/20 text-gray-400 rounded-xl hover:border-primary hover:text-primary transition font-bold">
-                        + افزودن واریانت جدید
-                      </button>
-                    </div>
+                    <div className="space-y-4">{productForm.variants.map((variant, vIdx) => (<div key={vIdx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3"><div className="flex justify-between items-center"><h4 className="text-sm font-bold text-primary">واریانت #{vIdx + 1}</h4>{productForm.variants.length > 1 && <button onClick={() => { const newVariants = productForm.variants.filter((_, i) => i !== vIdx); setProductForm(prev => ({...prev, variants: newVariants})); }} className="text-red-400 hover:text-red-300"><FiTrash2 /></button>}</div><div><label className="text-xs text-gray-400 block mb-1">ویژگی‌های این واریانت (مثال: قرمز، 500ml)</label><input type="text" value={variant.attributes_text || ''} onChange={(e) => { const newVariants = [...productForm.variants]; newVariants[vIdx].attributes_text = e.target.value; setProductForm(prev => ({...prev, variants: newVariants})); }} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-primary" placeholder="قرمز، آبی، 500 میلی‌لیتر" /></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-xs text-gray-400 mb-1">قیمت کاربر عادی</label><input type="number" placeholder="تومان" value={variant.price_normal || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_normal = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">قیمت ویزیتور</label><input type="number" placeholder="تومان" value={variant.price_visitor || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_visitor = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">قیمت مغازه‌دار</label><input type="number" placeholder="تومان" value={variant.price_shop_owner || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_shop_owner = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">قیمت عمده‌فروش</label><input type="number" placeholder="تومان" value={variant.price_wholesale || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_wholesale = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">درصد تخفیف (%)</label><input type="number" min="0" max="100" placeholder="مثال: 20" value={variant.discount_percent || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].discount_percent = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">موجودی انبار</label><input type="number" placeholder="موجودی" value={variant.stock_quantity || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].stock_quantity = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div></div></div>))}<button onClick={() => setProductForm(prev => ({...prev, variants: [...prev.variants, { price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]}))} className="w-full py-3 border-2 border-dashed border-white/20 text-gray-400 rounded-xl hover:border-primary hover:text-primary transition font-bold">+ افزودن واریانت جدید</button></div>
                   )}
                 </div>
-
-                <div className="flex justify-between pt-4 border-t border-white/10">
-                  <button onClick={() => { if (productTab === 'attrs') setProductTab('base'); else if (productTab === 'variants') setProductTab('attrs'); }} className={`px-6 py-3 rounded-xl font-bold transition ${productTab === 'base' ? 'invisible' : 'bg-white/5 text-white hover:bg-white/10'}`}>قبلی</button>
-                  {productTab === 'variants' || editingProduct ? (
-                    <button onClick={handleCreateOrUpdateProduct} disabled={uploadingImage} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                      {uploadingImage ? 'در حال آپلود...' : <><FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}</>}
-                    </button>
-                  ) : (
-                    <button onClick={() => { if (productTab === 'base') setProductTab('attrs'); else if (productTab === 'attrs') setProductTab('variants'); }} className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition flex items-center gap-2">مرحله بعد</button>
-                  )}
-                </div>
+                <div className="flex justify-between pt-4 border-t border-white/10 no-print"><button onClick={() => { if (productTab === 'attrs') setProductTab('base'); else if (productTab === 'variants') setProductTab('attrs'); }} className={`px-6 py-3 rounded-xl font-bold transition ${productTab === 'base' ? 'invisible' : 'bg-white/5 text-white hover:bg-white/10'}`}>قبلی</button>{productTab === 'variants' || editingProduct ? <button onClick={handleCreateOrUpdateProduct} disabled={uploadingImage} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">{uploadingImage ? 'در حال آپلود...' : <><FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}</>}</button> : <button onClick={() => { if (productTab === 'base') setProductTab('attrs'); else if (productTab === 'attrs') setProductTab('variants'); }} className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition flex items-center gap-2">مرحله بعد</button>}</div>
               </div>
             </div>
           )}
 
           {selectedOrder && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl">
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl no-print">
               <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 sticky top-0 bg-[#1a1a1a] z-10">
-                  <h2 className="text-xl font-bold text-white">جزئیات سفارش #{selectedOrder.id}</h2>
-                  <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-white"><FiX size={24} /></button>
-                </div>
+                <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4 sticky top-0 bg-[#1a1a1a] z-10"><h2 className="text-xl font-bold text-white">جزئیات سفارش #{selectedOrder.id}</h2><button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-white"><FiX size={24} /></button></div>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><p className="text-sm text-gray-400">مشتری</p><p className="text-white font-bold">{selectedOrder.user_name}</p></div>
-                    <div><p className="text-sm text-gray-400">شماره تماس</p><p className="text-white font-bold" dir="ltr">{selectedOrder.user_phone}</p></div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400">آدرس ارسال</p>
-                    <p className="text-white">{selectedOrder.province}، {selectedOrder.city}</p>
-                    <p className="text-white text-sm">{selectedOrder.full_address}</p>
-                    <p className="text-white text-sm">کد پستی: {selectedOrder.postal_code}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400 mb-2">اقلام سفارش</p>
-                    <div className="space-y-2">
-                      {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                        selectedOrder.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-sm bg-white/5 p-2 rounded-lg">
-                            <span className="text-gray-300">{item.product_title} <span className="text-gray-500 text-xs">(x{item.quantity})</span></span>
-                            <span className="text-primary font-bold">{new Intl.NumberFormat('fa-IR').format(item.unit_price * item.quantity)} تومان</span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-gray-500">جزئیات اقلام در دسترس نیست.</p>
-                      )}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
-                      <span className="text-white font-bold">مجموع کل:</span>
-                      <span className="text-primary font-black text-lg">{parseFloat(selectedOrder.total_price).toLocaleString()} تومان</span>
-                    </div>
-                  </div>
-                  <div className="border-t border-white/10 pt-4">
-                    <p className="text-sm text-gray-400 mb-2">تغییر وضعیت سفارش</p>
-                    <div className="flex gap-2">
-                      <select id="order-status-select" defaultValue={selectedOrder.status} className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary">
-                        <option value="pending_payment">در انتظار پرداخت</option>
-                        <option value="paid">پرداخت شده</option>
-                        <option value="processing">در حال پردازش</option>
-                        <option value="delivered">ارسال شده</option>
-                        <option value="cancelled">لغو شده</option>
-                        <option value="refunded">مرجوع شده</option>
-                      </select>
-                      <button onClick={() => {
-                        const selectElement = document.getElementById('order-status-select');
-                        if (selectElement) handleUpdateOrderStatus(selectedOrder.id, selectElement.value);
-                      }} className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-bold transition">
-                        اعمال تغییرات
-                      </button>
-                    </div>
-                  </div>
+                  <div className="grid grid-cols-2 gap-4"><div><p className="text-sm text-gray-400">مشتری</p><p className="text-white font-bold">{selectedOrder.user_name}</p></div><div><p className="text-sm text-gray-400">شماره تماس</p><p className="text-white font-bold" dir="ltr">{selectedOrder.user_phone}</p></div><div><p className="text-sm text-gray-400">روش پرداخت</p><p className={`font-bold flex items-center gap-2 ${selectedOrder.payment_method === 'cash_on_delivery' ? 'text-primary' : 'text-white'}`}>{selectedOrder.payment_method === 'cash_on_delivery' ? <><FiTruck /> پرداخت درب منزل</> : 'کارت به کارت'}</p></div></div>
+                  <div><p className="text-sm text-gray-400">آدرس ارسال</p><p className="text-white">{selectedOrder.province}، {selectedOrder.city}</p><p className="text-white text-sm">{selectedOrder.full_address}</p><p className="text-white text-sm">کد پستی: {selectedOrder.postal_code}</p></div>
+                  <div><p className="text-sm text-gray-400 mb-2">اقلام سفارش</p><div className="space-y-2">{selectedOrder.items && selectedOrder.items.length > 0 ? selectedOrder.items.map((item, idx) => (<div key={idx} className="flex justify-between items-center text-sm bg-white/5 p-2 rounded-lg"><span className="text-gray-300">{item.product_title} <span className="text-gray-500 text-xs">(x{item.quantity})</span></span><span className="text-primary font-bold">{new Intl.NumberFormat('fa-IR').format(item.unit_price * item.quantity)} تومان</span></div>)) : <p className="text-sm text-gray-500">جزئیات اقلام در دسترس نیست.</p>}</div><div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center"><span className="text-white font-bold">مجموع کل:</span><span className="text-primary font-black text-lg">{parseFloat(selectedOrder.total_price).toLocaleString()} تومان</span></div></div>
+                  <div className="border-t border-white/10 pt-4"><p className="text-sm text-gray-400 mb-2">تغییر وضعیت سفارش</p><div className="flex gap-2"><select id="order-status-select" defaultValue={selectedOrder.status} className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary"><option value="pending_payment">در انتظار پرداخت</option><option value="paid">پرداخت شده</option><option value="processing">در حال پردازش</option><option value="delivered">ارسال شده</option><option value="cancelled">لغو شده</option><option value="refunded">مرجوع شده</option></select><button onClick={() => { const selectElement = document.getElementById('order-status-select'); if (selectElement) handleUpdateOrderStatus(selectedOrder.id, selectElement.value); }} className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-bold transition">اعمال تغییرات</button></div></div>
                 </div>
               </div>
             </div>

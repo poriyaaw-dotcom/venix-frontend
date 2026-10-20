@@ -11,7 +11,7 @@ const MainCategories = () => {
         const res = await fetch('https://api.venixpodshop.com/api/v1/products/categories');
         if (res.ok) {
           const data = await res.json();
-          // Limit to the first 10 categories to preserve the landing page design
+          // Strictly limit to the first 10 categories for a perfect 5x2 grid
           setCategories(data.slice(0, 10));
         }
       } catch (err) {
@@ -25,11 +25,12 @@ const MainCategories = () => {
 
   return (
     <section className="hidden md:block my-[35px] bg-background">
-      <div className="container mx-auto px-4 md:px-6 flex justify-center">
-        <div className="flex flex-wrap justify-center gap-3 md:gap-[74px]">
+      <div className="container mx-auto px-4 md:px-6">
+        {/* Changed from flex-wrap to a strict 5-column grid to prevent wrapping issues on zoom/different screens */}
+        <div className="grid grid-cols-5 gap-4 md:gap-8 justify-items-center w-full max-w-5xl mx-auto">
           {loading ? (
-            // Loading skeletons to prevent layout shift
-            Array.from({ length: 5 }).map((_, i) => (
+            // Loading skeletons updated to 10 items to perfectly match the grid and prevent layout shift
+            Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="bg-[#252525] rounded-[20px] md:rounded-[30px] w-[120px] h-[120px] md:w-[180px] md:h-[180px] animate-pulse"></div>
             ))
           ) : (
@@ -40,11 +41,11 @@ const MainCategories = () => {
                 className="bg-[#252525] rounded-[20px] md:rounded-[30px] flex flex-col items-center justify-end cursor-pointer hover:scale-105 transition-transform shadow-lg border border-primary/5 relative overflow-hidden group w-[120px] h-[120px] md:w-[180px] md:h-[180px] p-3 md:p-4"
               >
                 <img 
-  src={cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `https://api.venixpodshop.com${cat.image_url}`) : '/category-img.png'} 
-  alt={cat.name} 
-  className="w-12 h-12 md:w-24 md:h-24 object-contain mb-1.5 md:mb-2 group-hover:scale-110 transition-transform duration-300 z-10"
-  onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }} 
-/>
+                  src={cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `https://api.venixpodshop.com${cat.image_url}`) : '/category-img.png'} 
+                  alt={cat.name} 
+                  className="w-12 h-12 md:w-24 md:h-24 object-contain mb-1.5 md:mb-2 group-hover:scale-110 transition-transform duration-300 z-10"
+                  onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }} 
+                />
                 <h3 className="font-bold text-xs md:text-sm text-primary z-10 text-center leading-tight">{cat.name}</h3>
               </Link>
             ))
