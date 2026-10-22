@@ -1,5 +1,5 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { CartProvider, useCart } from './Context/CartContext'; 
 import { Toaster } from 'react-hot-toast';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
@@ -26,6 +26,7 @@ import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
 import Admin from './pages/Admin';
+import AdminLogin from './pages/AdminLogin';
 import CardToCardPayment from './pages/CardToCardPayment';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail'; 
@@ -115,10 +116,29 @@ function MobileBottomBar() {
   );
 }
 
-// ✅ Wrapped content to access useLocation inside Router
 function AppContent() {
   const location = useLocation();
-  const isAdminPage = location.pathname.startsWith('/admin');
+  const navigate = useNavigate();
+  const isAdminPage = location.pathname.startsWith('/admin') && location.pathname !== '/admin-login';
+
+  // ✅ THE BOUNCER LOGIC (FIXED)
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isAdminSubdomain = hostname.startsWith('admin.');
+
+    if (isAdminSubdomain) {
+      // If on admin subdomain and at root, send to admin login
+      if (location.pathname === '/') {
+        navigate('/admin-login', { replace: true });
+      }
+    } else {
+      // If NOT on admin subdomain, BLOCK access to the actual admin dashboard
+      // ✅ FIX: Explicitly check for '/admin' or '/admin/' to avoid blocking '/admin-login'
+      if (location.pathname === '/admin' || location.pathname.startsWith('/admin/')) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [location.pathname, navigate]);
 
   return (
     <>
@@ -154,13 +174,16 @@ function AppContent() {
           <Route path="/card-to-card" element={<CardToCardPayment />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
+          
+          {/* ✅ Admin Routes */}
+          <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin" element={<Admin />} /> 
         </Routes>
       </div>
 
       <MobileBottomBar />
       
-      {/* ✅ Hide WhatsApp button on Admin page */}
+      {/* Hide WhatsApp button on Admin pages */}
       {!isAdminPage && <FloatingWhatsApp />}
     </>
   );
