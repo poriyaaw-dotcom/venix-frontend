@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar, FiSettings, FiTruck, FiPrinter } from 'react-icons/fi';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -700,7 +700,7 @@ const Admin = () => {
                   <div key={p.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-bold text-gray-500 w-6 text-center bg-white/5 rounded-full py-1">{index + 1}</span>
-                      {p.image_url && <img src={p.image_url.startsWith('http') ? p.image_url : `http://localhost:8000${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />}
+                      {p.image_url && <img src={p.image_url.startsWith('http') ? p.image_url : `https://api.venixpodshop.com${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />}
                       <div><h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3><p className="text-xs text-gray-400">{p.title_en}</p></div>
                     </div>
                     <div className="flex items-center gap-3 no-print">
@@ -836,7 +836,7 @@ const Admin = () => {
               <div className="space-y-4">
                 {blogs.length === 0 ? <p className="text-gray-500 text-center py-10">بلاگی یافت نشد.</p> : blogs.map(blog => (
                   <div key={blog.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4">{blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `http://localhost:8000${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}<div><h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3><p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p></div></div>
+                    <div className="flex items-center gap-4">{blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}<div><h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3><p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p></div></div>
                     <div className="flex items-center gap-3 no-print"><span className={`text-xs px-3 py-1 rounded-lg ${blog.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{blog.is_active ? 'فعال' : 'غیرفعال'}</span><button onClick={() => handleEditBlog(blog)} className="p-2 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition" title="ویرایش"><FiEdit2 /></button><button onClick={() => handleToggleBlogStatus(blog.id, blog.is_active)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition" title="تغییر وضعیت"><FiToggleRight size={24} /></button><button onClick={() => handleDeleteBlog(blog.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"><FiTrash2 /></button></div>
                   </div>
                 ))}

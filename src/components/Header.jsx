@@ -16,7 +16,7 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/v1/products/categories')
+    fetch('https://api.venixpodshop.com/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

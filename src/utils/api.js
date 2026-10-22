@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
 
 export const formatPrice = (price) => {
   if (!price) return '۰';
@@ -35,7 +35,7 @@ export const fetchProducts = async () => {
         discountPrice: price,
         discount: firstVariant.discount_percent || 0,
         oldPrice: firstVariant.base_price || price,
-        image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://localhost:8000${product.image_url}`) : '/category-img.png',
+        image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `https://api.venixpodshop.com${product.image_url}`) : '/category-img.png',
         category: product.category_name || 'دستگاه',
         brand: product.brand_name || 'generic',
         variants: product.variants || [],
@@ -66,7 +66,7 @@ export const fetchProductById = async (id) => {
       price: price,
       discountPrice: price,
       discount: 0,
-      image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://localhost:8000${product.image_url}`) : '/category-img.png',
+      image: product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `https://api.venixpodshop.com${product.image_url}`) : '/category-img.png',
       brand: product.brand_name || 'NO NAME',
       description: product.description || 'توضیحات محصول به زودی اضافه می‌شود.',
       category: product.category_name || 'دستگاه',

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
 
 const Blog = () => {
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ const Blog = () => {
                 <div className="h-40 md:h-48 bg-gray-800 relative overflow-hidden">
                   {blog.image_url ? (
                     <img 
-                      src={blog.image_url.startsWith('http') ? blog.image_url : `http://localhost:8000${blog.image_url}`} 
+                      src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`} 
                       alt={blog.title} 
                       className="w-full h-full object-cover hover:scale-105 transition duration-500" 
                     />

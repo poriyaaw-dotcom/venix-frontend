@@ -1,3 +1,4 @@
+// src/pages/Cart.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../Context/CartContext';
@@ -50,10 +51,10 @@ const Cart = () => {
             {cartItems.map((item) => {
               const itemId = item.variant_id || item.id;
               
-              // ✅ FIX: Use item.price (which is now the correct final_price for the user's group)
-              const hasDiscount = item.discount > 0;
-              const displayPrice = item.price || 0;
-              const strikePrice = hasDiscount ? (item.basePrice || item.price) : null;
+              // ✅ FIX: Strictly check if basePrice is greater than final price
+              const finalPrice = item.price || 0;
+              const basePrice = item.basePrice || 0;
+              const hasDiscount = basePrice > finalPrice;
               
               return (
                 <React.Fragment key={itemId}>
@@ -62,7 +63,7 @@ const Cart = () => {
                     <div className="flex items-center gap-4 mb-4">
                       <Link to={`/product/${item.product_id || item.id}`} className="w-24 h-24 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
                         <img 
-                          src={(item.image || item.image_url) ? ((item.image || item.image_url).startsWith('http') ? (item.image || item.image_url) : `http://localhost:8000${item.image || item.image_url}`) : '/category-img.png'} 
+                          src={(item.image || item.image_url) ? ((item.image || item.image_url).startsWith('http') ? (item.image || item.image_url) : `https://api.venixpodshop.com${item.image || item.image_url}`) : '/category-img.png'} 
                           alt={item.title} 
                           className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" 
                           onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }}
@@ -94,10 +95,11 @@ const Cart = () => {
 
                     <div className="border-t border-white/10 pt-3 flex justify-between items-center">
                       <div className="text-left">
-                        {hasDiscount && strikePrice && (
-                          <div className="text-xs text-gray-500 line-through">{formatPrice(strikePrice * item.quantity)}</div>
+                        {/* ✅ FIXED: Show original price crossed out if discounted */}
+                        {hasDiscount && (
+                          <div className="text-xs text-gray-500 line-through mb-1">{formatPrice(basePrice * item.quantity)} تومان</div>
                         )}
-                        <div className="text-lg font-black text-white">{formatPrice(displayPrice * item.quantity)} <span className="text-xs font-normal text-gray-500">تومان</span></div>
+                        <div className="text-lg font-black text-white">{formatPrice(finalPrice * item.quantity)} <span className="text-xs font-normal text-gray-500">تومان</span></div>
                       </div>
                     </div>
                   </div>
@@ -106,7 +108,7 @@ const Cart = () => {
                   <div className="hidden md:flex bg-white/[0.035] border border-white/10 rounded-2xl p-4 flex-col sm:flex-row items-center gap-6 transition hover:border-white/20">
                     <Link to={`/product/${item.product_id || item.id}`} className="w-full sm:w-28 h-28 bg-white/[0.025] rounded-xl flex items-center justify-center shrink-0 group">
                       <img 
-                        src={(item.image || item.image_url) ? ((item.image || item.image_url).startsWith('http') ? (item.image || item.image_url) : `http://localhost:8000${item.image || item.image_url}`) : '/category-img.png'} 
+                        src={(item.image || item.image_url) ? ((item.image || item.image_url).startsWith('http') ? (item.image || item.image_url) : `https://api.venixpodshop.com${item.image || item.image_url}`) : '/category-img.png'} 
                         alt={item.title} 
                         className="w-20 h-20 object-contain group-hover:scale-105 transition duration-300" 
                         onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }}
@@ -131,10 +133,11 @@ const Cart = () => {
                     </div>
 
                     <div className="text-center sm:text-left w-full sm:w-auto">
-                      {hasDiscount && strikePrice && (
-                        <div className="text-xs text-gray-500 line-through mb-1">{formatPrice(strikePrice * item.quantity)}</div>
+                      {/* ✅ FIXED: Show original price crossed out if discounted */}
+                      {hasDiscount && (
+                        <div className="text-xs text-gray-500 line-through mb-1">{formatPrice(basePrice * item.quantity)} تومان</div>
                       )}
-                      <div className="text-lg font-black text-white">{formatPrice(displayPrice * item.quantity)}</div>
+                      <div className="text-lg font-black text-white">{formatPrice(finalPrice * item.quantity)}</div>
                       <div className="text-[10px] text-gray-500 font-medium">تومان</div>
                     </div>
 

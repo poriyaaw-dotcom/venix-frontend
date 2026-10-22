@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiChevronLeft, FiShoppingCart, FiStar, FiSend, FiHeart, FiMinus, FiPlus, FiCheck, FiTruck, FiShield, FiSettings } from 'react-icons/fi';
-import { Helmet } from 'react-helmet-async'; // ✅ NEW
+import { Helmet } from 'react-helmet-async';
 import { useCart } from '../Context/CartContext';
 import { fetchProductById, formatPrice } from '../utils/api';
 import Header from '../components/Header';
@@ -35,7 +35,7 @@ const ProductDetail = () => {
     };
     const loadReviews = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/reviews/product/${id}`);
+        const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/product/${id}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {}
     };
@@ -61,31 +61,32 @@ const ProductDetail = () => {
   );
 
   const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
-  const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.base_price || product.price) : product.price;
-  const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
+  
+  // ✅ FIX: Strictly separate final and base prices
+  const finalPrice = selectedVariant ? (selectedVariant.final_price || product.price) : product.price;
+  const basePrice = selectedVariant ? (selectedVariant.base_price || product.price) : product.price;
+  
+  // ✅ FIX: Only consider it a discount if base price is strictly greater than final price
+  const hasDiscount = basePrice > finalPrice;
   const brandName = product.brand || product.brand_name || null;
 
   const stockQty = selectedVariant?.stock_quantity;
   const isOutOfStock = stockQty === null || stockQty === undefined || stockQty <= 0;
   const displayStockLimit = typeof stockQty === 'number' && stockQty > 0 ? stockQty : 999;
 
-  // ✅ NEW: JSON-LD Schema for Google Rich Snippets
-  const imageUrl = product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://localhost:8000${product.image_url}`) : "";
+  const imageUrl = product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `https://api.venixpodshop.com${product.image_url}`) : "";
   const jsonLd = {
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.meta_title || product.title,
     "image": imageUrl,
     "description": product.meta_description || product.description || "",
-    "brand": {
-      "@type": "Brand",
-      "name": brandName || "Venix"
-    },
+    "brand": { "@type": "Brand", "name": brandName || "Venix" },
     "offers": {
       "@type": "Offer",
       "url": window.location.href,
       "priceCurrency": "IRR",
-      "price": displayPrice,
+      "price": finalPrice,
       "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
       "itemCondition": "https://schema.org/NewCondition"
     },
@@ -98,7 +99,6 @@ const ProductDetail = () => {
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
-      {/* ✅ NEW: Dynamic SEO Meta Tags */}
       <Helmet>
         <title>{product.meta_title || product.title} | Venix Shop</title>
         <meta name="description" content={product.meta_description || product.description || `خرید ${product.title} از فروشگاه ونیکس`} />
@@ -129,7 +129,6 @@ const ProductDetail = () => {
               </button>
               {hasDiscount && <div className="absolute top-8 left-8 z-10 bg-primary text-white text-xs font-bold px-4 py-2 rounded-full">فروش ویژه</div>}
               <div className="h-[300px] md:h-[420px] flex items-center justify-center">
-                {/* ✅ UPDATED: Added image_alt_text to img tag */}
                 <img src={product.image} alt={product.image_alt_text || product.title} onError={(e) => { e.target.onerror = null; e.target.src = '/category-img.png'; }} className="max-h-[260px] md:max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
               </div>
             </div>
@@ -178,12 +177,16 @@ const ProductDetail = () => {
               </span>
             </div>
             
+            {/* ✅ FIXED PRICE BOX */}
             <div className="mt-5 bg-white/[0.035] border border-white/10 rounded-2xl p-5">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                  {hasDiscount && selectedVariant && selectedVariant.base_price && <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(selectedVariant.base_price)} تومان</div>}
+                  {/* ✅ Always show original price crossed out if there is a discount */}
+                  {hasDiscount && (
+                    <div className="text-sm text-gray-500 line-through mb-1">{formatPrice(basePrice)} تومان</div>
+                  )}
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-white">{formatPrice(displayPrice)}</span>
+                    <span className="text-3xl font-black text-white">{formatPrice(finalPrice)}</span>
                     <span className="text-xs text-gray-500">تومان</span>
                   </div>
                 </div>
@@ -199,17 +202,14 @@ const ProductDetail = () => {
                   if (isOutOfStock) return;
                   const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
                   const maxStock = selectedVariant?.stock_quantity || 999; 
-                  const vBasePrice = selectedVariant?.base_price || product.price;
-                  const vFinalPrice = selectedVariant?.final_price || vBasePrice;
-                  const vDiscount = selectedVariant?.discount_percent || 0;
-
+                  
                   addToCart(targetVariantId, quantity, { 
                     title: product.title, 
                     titleEn: product.titleEn || '', 
-                    price: vFinalPrice,
-                    basePrice: vBasePrice,
-                    discount: vDiscount, 
-                    discountPrice: vFinalPrice, 
+                    price: finalPrice,
+                    basePrice: basePrice,
+                    discount: selectedVariant?.discount_percent || 0, 
+                    discountPrice: finalPrice, 
                     image: product.image || product.image_url || '', 
                     product_id: product.id 
                   }, maxStock); 
@@ -274,7 +274,7 @@ const ProductDetail = () => {
               const token = localStorage.getItem('token');
               if (!token) { alert('لطفاً ابتدا وارد حساب کاربری خود شوید.'); return; }
               try {
-                const res = await fetch(`http://localhost:8000/api/v1/reviews/?product_id=${id}`, {
+                const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/?product_id=${id}`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
                 });
