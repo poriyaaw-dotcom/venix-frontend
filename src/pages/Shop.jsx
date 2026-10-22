@@ -1,6 +1,6 @@
-// src/pages/Shop.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { FiChevronLeft, FiChevronRight, FiSliders, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -11,13 +11,11 @@ import SortDropdown from '../components/shop/SortDropdown';
 import { fetchProducts, toFarsiNumber } from '../utils/api';
 
 const Shop = () => {
-  // 1. Get URL parameters
   const [searchParams] = useSearchParams();
   const urlSearchQuery = searchParams.get('q') || '';
   const urlCategory = searchParams.get('category') || '';
   const urlBrand = searchParams.get('brand') || '';
 
-  // 2. Initialize state
   const [filters, setFilters] = useState({ 
     categories: urlCategory ? [urlCategory] : [], 
     brands: urlBrand ? [urlBrand] : [], 
@@ -29,32 +27,41 @@ const Shop = () => {
   
   const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
   const itemsPerPage = 12;
 
-  // 3. 🚨 CRITICAL FIX: Sync filters with URL changes in real-time!
   useEffect(() => {
     setFilters(prev => ({
       ...prev,
       categories: urlCategory ? [urlCategory] : [],
       brands: urlBrand ? [urlBrand] : []
     }));
-    setCurrentPage(1); // Reset to page 1 when filter changes
+    setCurrentPage(1);
   }, [urlCategory, urlBrand]);
 
-  // 4. Load products on mount
   useEffect(() => {
     const loadProducts = async () => {
       setIsLoading(true);
       const data = await fetchProducts();
-      console.log("🔥 PRODUCTS LOADED. First product category:", data[0]?.category);
-      console.log("🔥 CURRENT URL CATEGORY:", urlCategory);
       setAllProducts(data);
       setIsLoading(false);
     };
     loadProducts();
+    
+    const loadCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/v1/products/categories');
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data);
+        }
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+      }
+    };
+    loadCategories();
   }, []);
 
-  // 5. Filter logic
   const filteredProducts = allProducts.filter((product) => {
     const prodCategory = product.category || product.category_name || 'دستگاه';
     const prodBrand = product.brand || product.brand_name || 'generic';
@@ -73,7 +80,6 @@ const Shop = () => {
     return categoryMatch && brandMatch && priceMatch && searchMatch;
   });
 
-  // 6. Sort logic
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const priceA = a.discountPrice || a.price;
     const priceB = b.discountPrice || b.price;
@@ -100,14 +106,27 @@ const Shop = () => {
     setCurrentPage(1); 
   };
 
+  // Find the current category for SEO
+  const currentCategoryData = categories.find(c => c.name === urlCategory);
+  const pageTitle = currentCategoryData?.meta_title || (urlCategory ? `${urlCategory} | فروشگاه ونیکس` : 'فروشگاه محصولات | ونیکس');
+  const pageDescription = currentCategoryData?.meta_description || 'خرید انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت و ضمانت اصالت کالا';
+
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       <Header />
       <Breadcrumb />
       <section id="shop-section" className="my-[35px] scroll-mt-24">
         <div className="max-w-[1197px] mx-auto px-4">
           <div className="flex items-start justify-between mb-4 md:mb-6 relative z-10">
-            <h1 className="text-[25px] font-bold text-white">فروشگاه محصولات</h1>
+            <h1 className="text-[25px] font-bold text-white">{currentCategoryData?.name || 'فروشگاه محصولات'}</h1>
             <div className="flex flex-col items-end gap-2">
               <div className="relative z-20">
                 <SortDropdown value={sort} onChange={setSort} />

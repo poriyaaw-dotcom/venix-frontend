@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { CartProvider, useCart } from './Context/CartContext'; 
 import { Toaster } from 'react-hot-toast';
+import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { FiHome, FiShoppingBag, FiShoppingCart, FiUser, FiX } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
 
@@ -29,7 +30,6 @@ import CardToCardPayment from './pages/CardToCardPayment';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail'; 
 
-// ✅ UPDATED: Floating WhatsApp Button - MOVED TO LEFT SIDE
 const FloatingWhatsApp = () => (
   <a 
     href="https://wa.me/989127467261" 
@@ -38,12 +38,9 @@ const FloatingWhatsApp = () => (
     className="fixed bottom-24 md:bottom-8 left-4 md:left-8 z-50 w-14 h-14 md:w-16 md:h-16 bg-[#25D366] rounded-full flex items-center justify-center shadow-2xl hover:bg-[#128C7E] hover:scale-110 transition-all duration-300 group"
     aria-label="Contact us on WhatsApp"
   >
-    {/* WhatsApp SVG Icon */}
     <svg className="w-8 h-8 md:w-9 md:h-9 text-white fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
     </svg>
-    
-    {/* Hover Tooltip - Positioned to the RIGHT of the button */}
     <span className="absolute left-full ml-3 bg-white text-gray-800 text-xs font-bold px-3 py-1.5 rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
       پشتیبانی واتس‌اپ
     </span>
@@ -56,7 +53,7 @@ function MobileBottomBar() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetch('https://api.venixpodshop.com/api/v1/products/categories')
+    fetch('http://localhost:8000/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCategories(data);
@@ -66,22 +63,16 @@ function MobileBottomBar() {
 
   return (
     <>
-      {/* Mobile Bottom Tab Bar with Glassmorphism */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t border-white/10 z-40 pb-[env(safe-area-inset-bottom)] shadow-2xl">
         <div className="flex justify-around items-center h-16">
           <Link to="/" className="flex flex-col items-center justify-center text-gray-400 hover:text-primary transition w-full h-full">
             <FiHome className="text-xl mb-1" />
             <span className="text-[10px]">خانه</span>
           </Link>
-          
-          <button 
-            onClick={() => setShowMobileCategories(true)}
-            className="flex flex-col items-center justify-center text-gray-400 hover:text-primary transition w-full h-full"
-          >
+          <button onClick={() => setShowMobileCategories(true)} className="flex flex-col items-center justify-center text-gray-400 hover:text-primary transition w-full h-full">
             <FiShoppingBag className="text-xl mb-1" />
             <span className="text-[10px]">فروشگاه</span>
           </button>
-          
           <Link to="/cart" className="flex flex-col items-center justify-center text-gray-400 hover:text-primary transition w-full h-full relative">
             <div className="relative">
               <FiShoppingCart className="text-xl mb-1" />
@@ -93,7 +84,6 @@ function MobileBottomBar() {
             </div>
             <span className="text-[10px]">سبد خرید</span>
           </Link>
-          
           <Link to="/profile" className="flex flex-col items-center justify-center text-gray-400 hover:text-primary transition w-full h-full">
             <FiUser className="text-xl mb-1" />
             <span className="text-[10px]">پروفایل</span>
@@ -101,7 +91,6 @@ function MobileBottomBar() {
         </div>
       </div>
 
-      {/* Categories Modal - Simple Button List */}
       {showMobileCategories && (
         <div className="fixed inset-0 z-[60] md:hidden">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowMobileCategories(false)}></div>
@@ -114,12 +103,7 @@ function MobileBottomBar() {
             </div>
             <div className="space-y-2">
               {categories.map((cat) => (
-                <Link 
-                  key={cat.id} 
-                  to={`/shop?category=${encodeURIComponent(cat.name)}`}
-                  onClick={() => setShowMobileCategories(false)}
-                  className="block w-full text-right bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-primary/10 transition text-gray-300 hover:text-primary text-sm font-bold"
-                >
+                <Link key={cat.id} to={`/shop?category=${encodeURIComponent(cat.name)}`} onClick={() => setShowMobileCategories(false)} className="block w-full text-right bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-primary/10 transition text-gray-300 hover:text-primary text-sm font-bold">
                   {cat.name}
                 </Link>
               ))}
@@ -134,55 +118,64 @@ function MobileBottomBar() {
 function App() {
   return (
     <CartProvider>
-      <Router>
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: '#1a1a1a',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              fontSize: '14px'
-            }
-          }}
-        />
-        
-        <div className="flex flex-col min-h-screen pb-16 md:pb-0">
-          <Routes>
-            <Route path="/" element={
-              <div className="min-h-screen font-sans">
-                <Header />
-                <HeroSlider />
-                <MainCategories />
-                <NewProducts />
-                <SalesSection />
-                <BlogSection />
-                <QASection />
-                <Footer />
-              </div>
-            } />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/payment-result" element={<PaymentResult />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/card-to-card" element={<CardToCardPayment />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogDetail />} />
-            <Route path="/admin" element={<Admin />} /> 
-          </Routes>
-        </div>
+      <HelmetProvider>
+        <Router>
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#1a1a1a',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                fontSize: '14px'
+              }
+            }}
+          />
+          
+          <div className="flex flex-col min-h-screen pb-16 md:pb-0">
+            <Routes>
+              {/* ✅ HOME PAGE WITH HARDCODED SEO TAGS */}
+              <Route path="/" element={
+                <div className="min-h-screen font-sans">
+                  <Helmet>
+                    <title>فروشگاه ونیکس | خرید ویپ، پاد سیستم و جویس اورجینال</title>
+                    <meta name="description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس، کویل و لوازم جانبی با بهترین قیمت، ضمانت اصالت کالا و ارسال سریع به سراسر ایران. فروشگاه تخصصی ونیکس." />
+                    <meta property="og:title" content="فروشگاه ونیکس | خرید ویپ، پاد سیستم و جویس اورجینال" />
+                    <meta property="og:description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با ضمانت اصالت و ارسال سریع." />
+                    <meta property="og:type" content="website" />
+                  </Helmet>
 
-        <MobileBottomBar />
-        
-        {/* ✅ Render the Floating WhatsApp Button Globally */}
-        <FloatingWhatsApp />
+                  <Header />
+                  <HeroSlider />
+                  <MainCategories />
+                  <NewProducts />
+                  <SalesSection />
+                  <BlogSection />
+                  <QASection />
+                  <Footer />
+                </div>
+              } />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/payment-result" element={<PaymentResult />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/card-to-card" element={<CardToCardPayment />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogDetail />} />
+              <Route path="/admin" element={<Admin />} /> 
+            </Routes>
+          </div>
 
-      </Router>
+          <MobileBottomBar />
+          <FloatingWhatsApp />
+
+        </Router>
+      </HelmetProvider>
     </CartProvider>
   );
 }

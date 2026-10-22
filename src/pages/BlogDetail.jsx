@@ -1,6 +1,6 @@
-// src/pages/BlogDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -13,7 +13,7 @@ const BlogDetail = () => {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const res = await fetch(`https://api.venixpodshop.com/api/v1/blog/${id}`);
+        const res = await fetch(`http://localhost:8000/api/v1/blog/${id}`);
         if (res.ok) {
           const data = await res.json();
           setBlog(data);
@@ -34,11 +34,20 @@ const BlogDetail = () => {
   if (!blog) return null;
 
   const imageUrl = blog.image_url 
-    ? (blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`)
+    ? (blog.image_url.startsWith('http') ? blog.image_url : `http://localhost:8000${blog.image_url}`)
     : null;
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
+      <Helmet>
+        <title>{blog.title} | بلاگ ونیکس</title>
+        <meta name="description" content={blog.content.substring(0, 155)} />
+        <meta property="og:title" content={blog.title} />
+        <meta property="og:description" content={blog.content.substring(0, 155)} />
+        {imageUrl && <meta property="og:image" content={imageUrl} />}
+        <meta property="og:type" content="article" />
+      </Helmet>
+
       <Header />
       <main className="flex-1 max-w-[800px] w-full mx-auto px-4 md:px-6 py-8 md:py-12">
         <button onClick={() => navigate('/blog')} className="mb-4 md:mb-6 text-primary hover:underline flex items-center gap-2 text-sm font-bold">

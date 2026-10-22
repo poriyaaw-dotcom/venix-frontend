@@ -1,10 +1,10 @@
-// src/pages/Blog.jsx
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const Blog = () => {
   const navigate = useNavigate();
@@ -30,6 +30,14 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
+      <Helmet>
+        <title>بلاگ ونیکس | آموزش، بررسی و اخبار دنیای ویپ</title>
+        <meta name="description" content="مقالات تخصصی درباره ویپ، پاد سیستم، جویس و نکات مراقبتی. جدیدترین اخبار و آموزش‌های دنیای ویپینگ را در بلاگ ونیکس بخوانید." />
+        <meta property="og:title" content="بلاگ ونیکس | آموزش، بررسی و اخبار دنیای ویپ" />
+        <meta property="og:description" content="مقالات تخصصی درباره ویپ، پاد سیستم، جویس و نکات مراقبتی" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       <Header />
       <main className="flex-1 max-w-[1197px] w-full mx-auto px-4 md:px-6 py-8 md:py-12">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 text-center">بلاگ تخصصی VENIX</h1>
@@ -45,7 +53,7 @@ const Blog = () => {
                 <div className="h-40 md:h-48 bg-gray-800 relative overflow-hidden">
                   {blog.image_url ? (
                     <img 
-                      src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`} 
+                      src={blog.image_url.startsWith('http') ? blog.image_url : `http://localhost:8000${blog.image_url}`} 
                       alt={blog.title} 
                       className="w-full h-full object-cover hover:scale-105 transition duration-500" 
                     />

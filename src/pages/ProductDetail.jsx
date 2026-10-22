@@ -1,6 +1,8 @@
+// src/pages/ProductDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiChevronLeft, FiShoppingCart, FiStar, FiSend, FiHeart, FiMinus, FiPlus, FiCheck, FiTruck, FiShield, FiSettings } from 'react-icons/fi';
+import { Helmet } from 'react-helmet-async'; // ✅ NEW
 import { useCart } from '../Context/CartContext';
 import { fetchProductById, formatPrice } from '../utils/api';
 import Header from '../components/Header';
@@ -33,7 +35,7 @@ const ProductDetail = () => {
     };
     const loadReviews = async () => {
       try {
-        const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/product/${id}`);
+        const res = await fetch(`http://localhost:8000/api/v1/reviews/product/${id}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {}
     };
@@ -59,8 +61,6 @@ const ProductDetail = () => {
   );
 
   const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
-  
-  // ✅ final_price is the authoritative price for the current user's group
   const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.base_price || product.price) : product.price;
   const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
   const brandName = product.brand || product.brand_name || null;
@@ -69,8 +69,46 @@ const ProductDetail = () => {
   const isOutOfStock = stockQty === null || stockQty === undefined || stockQty <= 0;
   const displayStockLimit = typeof stockQty === 'number' && stockQty > 0 ? stockQty : 999;
 
+  // ✅ NEW: JSON-LD Schema for Google Rich Snippets
+  const imageUrl = product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://localhost:8000${product.image_url}`) : "";
+  const jsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.meta_title || product.title,
+    "image": imageUrl,
+    "description": product.meta_description || product.description || "",
+    "brand": {
+      "@type": "Brand",
+      "name": brandName || "Venix"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "IRR",
+      "price": displayPrice,
+      "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": product.average_rating || 0,
+      "reviewCount": product.review_count || 0
+    }
+  };
+
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
+      {/* ✅ NEW: Dynamic SEO Meta Tags */}
+      <Helmet>
+        <title>{product.meta_title || product.title} | Venix Shop</title>
+        <meta name="description" content={product.meta_description || product.description || `خرید ${product.title} از فروشگاه ونیکس`} />
+        <meta property="og:title" content={product.meta_title || product.title} />
+        <meta property="og:description" content={product.meta_description || product.description || ""} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="og:type" content="product" />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
+
       <Header />
       <div className="max-w-[1240px] mx-auto px-4 pt-6">
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -91,7 +129,8 @@ const ProductDetail = () => {
               </button>
               {hasDiscount && <div className="absolute top-8 left-8 z-10 bg-primary text-white text-xs font-bold px-4 py-2 rounded-full">فروش ویژه</div>}
               <div className="h-[300px] md:h-[420px] flex items-center justify-center">
-                <img src={product.image} alt={product.title} onError={(e) => { e.target.onerror = null; e.target.src = '/category-img.png'; }} className="max-h-[260px] md:max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
+                {/* ✅ UPDATED: Added image_alt_text to img tag */}
+                <img src={product.image} alt={product.image_alt_text || product.title} onError={(e) => { e.target.onerror = null; e.target.src = '/category-img.png'; }} className="max-h-[260px] md:max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 md:gap-3 mt-4">
@@ -160,8 +199,6 @@ const ProductDetail = () => {
                   if (isOutOfStock) return;
                   const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
                   const maxStock = selectedVariant?.stock_quantity || 999; 
-                  
-                  // ✅ FIX: Pass final_price as the main price (it's already calculated for the user's group)
                   const vBasePrice = selectedVariant?.base_price || product.price;
                   const vFinalPrice = selectedVariant?.final_price || vBasePrice;
                   const vDiscount = selectedVariant?.discount_percent || 0;
@@ -169,8 +206,8 @@ const ProductDetail = () => {
                   addToCart(targetVariantId, quantity, { 
                     title: product.title, 
                     titleEn: product.titleEn || '', 
-                    price: vFinalPrice,       // ✅ The actual price to pay
-                    basePrice: vBasePrice,    // ✅ For strikethrough display in cart
+                    price: vFinalPrice,
+                    basePrice: vBasePrice,
                     discount: vDiscount, 
                     discountPrice: vFinalPrice, 
                     image: product.image || product.image_url || '', 
@@ -237,7 +274,7 @@ const ProductDetail = () => {
               const token = localStorage.getItem('token');
               if (!token) { alert('لطفاً ابتدا وارد حساب کاربری خود شوید.'); return; }
               try {
-                const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/?product_id=${id}`, {
+                const res = await fetch(`http://localhost:8000/api/v1/reviews/?product_id=${id}`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
                 });

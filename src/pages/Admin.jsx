@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiHome, FiPackage, FiUsers, FiFileText, FiLogOut, FiPlus, FiX, FiCheck, FiAlertCircle, FiShoppingBag, FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, FiImage, FiTrash2, FiTag, FiCreditCard, FiStar, FiSettings, FiTruck, FiPrinter } from 'react-icons/fi';
 
-const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -49,12 +49,18 @@ const Admin = () => {
   
   const [productForm, setProductForm] = useState({
     title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '',
+    meta_title: '', meta_description: '', image_alt_text: '',
     variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
     specifications: ['']
   });
 
+  // ✅ NEW: State variables for Category SEO and Editing
   const [newCatName, setNewCatName] = useState('');
   const [newCatSlug, setNewCatSlug] = useState('');
+  const [newCatMetaTitle, setNewCatMetaTitle] = useState('');
+  const [newCatMetaDescription, setNewCatMetaDescription] = useState('');
+  const [newCatImageAltText, setNewCatImageAltText] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
 
   const filteredBrandsForProduct = productForm.category_id ? brands.filter(b => b.category_id == productForm.category_id) : [];
   const filteredBrandsForTab = selectedBrandCategory ? brands.filter(b => b.category_id == selectedBrandCategory) : brands;
@@ -171,7 +177,10 @@ const Admin = () => {
         description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
         brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
         category_id: parseInt(productForm.category_id),
-        specifications: cleanSpecs
+        specifications: cleanSpecs,
+        meta_title: productForm.meta_title || null,
+        meta_description: productForm.meta_description || null,
+        image_alt_text: productForm.image_alt_text || null
       };
 
       if (!editingProduct) {
@@ -207,7 +216,7 @@ const Admin = () => {
 
       toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
       setIsAddProductOpen(false); setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = '';
-      setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] });
+      setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', meta_title: '', meta_description: '', image_alt_text: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] });
       
       const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
       if (resList.ok) { const dataList = await resList.json(); setProductsList(Array.isArray(dataList) ? dataList : (dataList.items || [])); setTotalPages(dataList.total_pages || 1); }
@@ -245,6 +254,7 @@ const Admin = () => {
         setProductForm({
           title: data.title || '', title_en: data.title_en || '', slug: data.slug || '', description: data.description || '', image_url: data.image_url || '',
           brand_id: data.brand_id ? String(data.brand_id) : '', category_id: data.category_id ? String(data.category_id) : '',
+          meta_title: data.meta_title || '', meta_description: data.meta_description || '', image_alt_text: data.image_alt_text || '',
           specifications: data.specifications && data.specifications.length > 0 ? data.specifications : [''],
           variants: data.variants && data.variants.length > 0 ? data.variants.map(v => ({
             id: v.id, sku: v.sku || '', price_normal: String(v.price_normal || ''), price_visitor: String(v.price_visitor || ''),
@@ -257,13 +267,64 @@ const Admin = () => {
     } catch (error) { console.error("Failed to load product details", error); toast.error('خطای شبکه در دریافت اطلاعات محصول'); }
   };
 
+  // ✅ UPDATED: handleAddCategory now handles both CREATE and UPDATE
   const handleAddCategory = async (e) => {
-    e.preventDefault(); if (!newCatName.trim()) return;
+    e.preventDefault(); 
+    if (!newCatName.trim()) return;
     const token = localStorage.getItem('token');
+    
+    const payload = {
+      name: newCatName, 
+      slug: newCatSlug || undefined,
+      meta_title: newCatMetaTitle || null,
+      meta_description: newCatMetaDescription || null,
+      image_alt_text: newCatImageAltText || null
+    };
+
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/categories`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newCatName, slug: newCatSlug || undefined }) });
-      if (res.ok) { setNewCatName(''); setNewCatSlug(''); const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resCats.ok) setCategories(await resCats.json()); }
-    } catch (error) { toast.error('خطا در افزودن دسته‌بندی'); }
+      let res;
+      if (editingCategoryId) {
+        // UPDATE existing category
+        res = await fetch(`${API_BASE_URL}/admin/categories/${editingCategoryId}`, { 
+          method: 'PUT', 
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(payload) 
+        });
+      } else {
+        // CREATE new category
+        res = await fetch(`${API_BASE_URL}/admin/categories`, { 
+          method: 'POST', 
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, 
+          body: JSON.stringify(payload) 
+        });
+      }
+
+      if (res.ok) { 
+        setNewCatName(''); setNewCatSlug(''); 
+        setNewCatMetaTitle(''); setNewCatMetaDescription(''); setNewCatImageAltText('');
+        setEditingCategoryId(null); // Reset editing state
+        
+        const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }); 
+        if (resCats.ok) setCategories(await resCats.json()); 
+      }
+    } catch (error) { toast.error('خطا در ذخیره دسته‌بندی'); }
+  };
+
+  // ✅ NEW: Function to load data into the form for editing
+  const handleEditCategoryClick = (cat) => {
+    setEditingCategoryId(cat.id);
+    setNewCatName(cat.name || '');
+    setNewCatSlug(cat.slug || '');
+    setNewCatMetaTitle(cat.meta_title || '');
+    setNewCatMetaDescription(cat.meta_description || '');
+    setNewCatImageAltText(cat.image_alt_text || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to form
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategoryId(null);
+    setNewCatName(''); setNewCatSlug(''); 
+    setNewCatMetaTitle(''); setNewCatMetaDescription(''); setNewCatImageAltText('');
   };
 
   const handleDeleteCategory = async (catId) => {
@@ -525,20 +586,61 @@ const Admin = () => {
             </div>
           )}
 
+          {/* ✅ UPDATED: Categories Tab with SEO Fields and Edit Functionality */}
           {activeTab === 'categories' && (
             <div>
-              <h1 className="text-2xl font-bold text-white mb-6">مدیریت دسته‌بندی‌ها</h1>
-              <form onSubmit={handleAddCategory} className="flex flex-col md:flex-row gap-4 mb-8">
-                <input type="text" placeholder="نام دسته‌بندی جدید" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
-                <input type="text" placeholder="اسلاگ (اختیاری - مثلا: vape)" value={newCatSlug} onChange={(e) => setNewCatSlug(e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
-                <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن دسته‌بندی</button>
+              <h1 className="text-2xl font-bold text-white mb-6">
+                {editingCategoryId ? 'ویرایش دسته‌بندی' : 'مدیریت دسته‌بندی‌ها'}
+              </h1>
+              
+              <form onSubmit={handleAddCategory} className="space-y-4 mb-8 bg-white/[0.02] p-6 rounded-2xl border border-white/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input type="text" placeholder="نام دسته‌بندی جدید *" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
+                  <input type="text" placeholder="اسلاگ (اختیاری - مثلا: vape)" value={newCatSlug} onChange={(e) => setNewCatSlug(e.target.value)} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
+                </div>
+                
+                <div className="border-t border-white/10 pt-4">
+                  <h4 className="text-sm font-bold text-primary mb-3">تنظیمات سئو (SEO)</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">عنوان سئو - حداکثر ۶۰ کاراکتر</label>
+                      <input type="text" value={newCatMetaTitle} onChange={e => setNewCatMetaTitle(e.target.value.slice(0, 60))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" dir="ltr" />
+                      <p className="text-[10px] text-gray-500 mt-1 text-left">{newCatMetaTitle.length}/60</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">توضیحات سئو - حداکثر ۱۵ کاراکتر</label>
+                      <textarea value={newCatMetaDescription} onChange={e => setNewCatMetaDescription(e.target.value.slice(0, 155))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary h-20" dir="ltr" />
+                      <p className="text-[10px] text-gray-500 mt-1 text-left">{newCatMetaDescription.length}/155</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">متن جایگزین تصویر - حداکثر ۱۲۵ کاراکتر</label>
+                      <input type="text" value={newCatImageAltText} onChange={e => setNewCatImageAltText(e.target.value.slice(0, 125))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" dir="ltr" />
+                      <p className="text-[10px] text-gray-500 mt-1 text-left">{newCatImageAltText.length}/125</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <button type="submit" className="flex-1 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">
+                    {editingCategoryId ? 'بروزرسانی دسته‌بندی' : 'افزودن دسته‌بندی'}
+                  </button>
+                  {editingCategoryId && (
+                    <button type="button" onClick={handleCancelEdit} className="px-6 py-3 rounded-xl font-bold transition bg-gray-600 hover:bg-gray-700 text-white">
+                      انصراف
+                    </button>
+                  )}
+                </div>
               </form>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {categories.map(cat => (
                   <div key={cat.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
                     <h3 className="font-bold text-white">{cat.name}</h3>
                     <p className="text-xs text-gray-500" dir="ltr">{cat.slug}</p>
-                    <button onClick={() => handleDeleteCategory(cat.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف"><FiTrash2 /></button>
+                    <div className="flex gap-2 absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition">
+                      <button onClick={() => handleEditCategoryClick(cat)} className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition" title="ویرایش"><FiEdit2 /></button>
+                      <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition" title="حذف"><FiTrash2 /></button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -587,7 +689,7 @@ const Admin = () => {
                 <h1 className="text-2xl font-bold text-white">مدیریت محصولات {showDeactivatedOnly && <span className="text-red-400 text-lg">(فقط غیرفعال‌ها)</span>}</h1>
                 <div className="flex gap-2">
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
-                  <button onClick={() => { setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = ''; setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); setIsAddProductOpen(true); setProductTab('base'); }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition"><FiPlus /> افزودن محصول جدید</button>
+                  <button onClick={() => { setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = ''; setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', meta_title: '', meta_description: '', image_alt_text: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); setIsAddProductOpen(true); setProductTab('base'); }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition"><FiPlus /> افزودن محصول جدید</button>
                 </div>
               </div>
               <div className="mb-4 no-print">
@@ -598,7 +700,7 @@ const Admin = () => {
                   <div key={p.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       <span className="text-xs font-bold text-gray-500 w-6 text-center bg-white/5 rounded-full py-1">{index + 1}</span>
-                      {p.image_url && <img src={p.image_url.startsWith('http') ? p.image_url : `https://api.venixpodshop.com${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />}
+                      {p.image_url && <img src={p.image_url.startsWith('http') ? p.image_url : `http://localhost:8000${p.image_url}`} alt={p.title} className="w-12 h-12 rounded-lg object-cover bg-white/5" onError={(e) => { e.target.src = '/category-img.png'; }} />}
                       <div><h3 className={`font-bold ${p.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{p.title}</h3><p className="text-xs text-gray-400">{p.title_en}</p></div>
                     </div>
                     <div className="flex items-center gap-3 no-print">
@@ -734,7 +836,7 @@ const Admin = () => {
               <div className="space-y-4">
                 {blogs.length === 0 ? <p className="text-gray-500 text-center py-10">بلاگی یافت نشد.</p> : blogs.map(blog => (
                   <div key={blog.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-4">{blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.com${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}<div><h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3><p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p></div></div>
+                    <div className="flex items-center gap-4">{blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `http://localhost:8000${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}<div><h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3><p className="text-xs text-gray-400 line-clamp-1">{blog.content}</p></div></div>
                     <div className="flex items-center gap-3 no-print"><span className={`text-xs px-3 py-1 rounded-lg ${blog.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{blog.is_active ? 'فعال' : 'غیرفعال'}</span><button onClick={() => handleEditBlog(blog)} className="p-2 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition" title="ویرایش"><FiEdit2 /></button><button onClick={() => handleToggleBlogStatus(blog.id, blog.is_active)} className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition" title="تغییر وضعیت"><FiToggleRight size={24} /></button><button onClick={() => handleDeleteBlog(blog.id)} className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition"><FiTrash2 /></button></div>
                   </div>
                 ))}
@@ -804,6 +906,27 @@ const Admin = () => {
                       </select>
                       <div className="relative"><label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-white/5 hover:bg-white/10 transition"><div className="flex flex-col items-center justify-center pt-5 pb-6"><FiImage className="w-8 h-8 mb-2 text-gray-400" /><p className="text-xs text-gray-400">{productForm.image_url ? 'تصویر انتخاب شد (برای تغییر کلیک کنید)' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>{productForm.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{productForm.image_url}</p>}</div><input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], (url) => setProductForm(prev => ({...prev, image_url: url})))} disabled={uploadingImage} /></label>{uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}</div>
                       <textarea placeholder="توضیحات" value={productForm.description} onChange={e => setProductForm(prev => ({...prev, description: e.target.value}))} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" />
+                      
+                      <div className="border-t border-white/10 pt-4 mt-4">
+                        <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">تنظیمات سئو (SEO)</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">عنوان سئو (Meta Title) - حداکثر ۶۰ کاراکتر</label>
+                            <input type="text" value={productForm.meta_title} onChange={e => setProductForm(prev => ({...prev, meta_title: e.target.value.slice(0, 60)}))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" dir="ltr" />
+                            <p className="text-[10px] text-gray-500 mt-1 text-left">{productForm.meta_title.length}/60</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">توضیحات سئو (Meta Description) - حداکثر ۱۵۵ کاراکتر</label>
+                            <textarea value={productForm.meta_description} onChange={e => setProductForm(prev => ({...prev, meta_description: e.target.value.slice(0, 155)}))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary h-20" dir="ltr" />
+                            <p className="text-[10px] text-gray-500 mt-1 text-left">{productForm.meta_description.length}/155</p>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400 mb-1 block">متن جایگزین تصویر (Image Alt Text) - حداکثر ۱۵ کاراکتر</label>
+                            <input type="text" value={productForm.image_alt_text} onChange={e => setProductForm(prev => ({...prev, image_alt_text: e.target.value.slice(0, 125)}))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-primary" dir="ltr" />
+                            <p className="text-[10px] text-gray-500 mt-1 text-left">{productForm.image_alt_text.length}/125</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                   {productTab === 'attrs' && (

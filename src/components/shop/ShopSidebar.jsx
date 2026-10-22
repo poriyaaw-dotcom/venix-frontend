@@ -11,7 +11,7 @@ const ShopSidebar = ({ filters, setFilters }) => {
 
   useEffect(() => {
     // Fetch Categories dynamically
-    fetch('https://api.venixpodshop.com/api/v1/products/categories')
+    fetch('http://localhost:8000/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCategories(data);
@@ -19,7 +19,7 @@ const ShopSidebar = ({ filters, setFilters }) => {
       .catch(err => console.error("Failed to load categories:", err));
 
     // Fetch ALL Brands dynamically (with category_id included)
-    fetch('https://api.venixpodshop.com/api/v1/products/brands')
+    fetch('http://localhost:8000/api/v1/products/brands')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setAllBrands(data);
