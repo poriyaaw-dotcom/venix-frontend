@@ -119,9 +119,11 @@ function MobileBottomBar() {
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
-  const isAdminPage = location.pathname.startsWith('/admin') && location.pathname !== '/admin-login';
+  
+  // ✅ FIXED: Now includes /admin-login so WhatsApp is hidden there too
+  const isAdminPage = location.pathname.startsWith('/admin');
 
-  // ✅ THE BOUNCER LOGIC (FIXED)
+  // ✅ THE BOUNCER LOGIC
   useEffect(() => {
     const hostname = window.location.hostname;
     const isAdminSubdomain = hostname.startsWith('admin.');
@@ -133,7 +135,7 @@ function AppContent() {
       }
     } else {
       // If NOT on admin subdomain, BLOCK access to the actual admin dashboard
-      // ✅ FIX: Explicitly check for '/admin' or '/admin/' to avoid blocking '/admin-login'
+      // (But allow /admin-login so they can authenticate first)
       if (location.pathname === '/admin' || location.pathname.startsWith('/admin/')) {
         navigate('/', { replace: true });
       }
@@ -183,7 +185,7 @@ function AppContent() {
 
       <MobileBottomBar />
       
-      {/* Hide WhatsApp button on Admin pages */}
+      {/* Hide WhatsApp button on ALL admin pages (including login) */}
       {!isAdminPage && <FloatingWhatsApp />}
     </>
   );
