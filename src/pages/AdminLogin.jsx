@@ -10,7 +10,7 @@ const AdminLogin = () => {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PHONE_NUMBER = '09019244403';
+  const ADMIN_PHONE_NUMBER = '09127467261';
 
   const handleRequestOTP = async (e) => {
     e.preventDefault();
