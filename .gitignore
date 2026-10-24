@@ -3,3 +3,10 @@ dist/
 .env
 .env.local
 .DS_Store
+
+# Ignore heavy/unnecessary files
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store

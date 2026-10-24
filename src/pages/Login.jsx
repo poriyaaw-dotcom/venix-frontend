@@ -5,7 +5,7 @@ import { FiUser, FiLock, FiArrowLeft, FiBriefcase } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'https://api.venixpodshop.com/api/v1';
 
 const Login = () => {
   const navigate = useNavigate();

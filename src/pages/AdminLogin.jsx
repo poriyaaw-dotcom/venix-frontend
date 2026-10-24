@@ -10,7 +10,7 @@ const AdminLogin = () => {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PHONE_NUMBER = '09127467261';
+  const ADMIN_PHONE_NUMBER = '09019244403';
 
   const handleRequestOTP = async (e) => {
     e.preventDefault();
@@ -21,7 +21,6 @@ const AdminLogin = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: phone }),
       });
-      
       const data = await res.json();
       if (res.ok) {
         toast.success('کد تایید ارسال شد');
@@ -47,23 +46,28 @@ const AdminLogin = () => {
       });
       
       const data = await res.json();
+      console.log("🔥 VERIFY OTP RESPONSE:", data);
 
       if (res.ok) {
         const token = data.access_token;
         const user = data.user;
+        console.log("🔥 USER DATA:", user);
+        console.log("🔥 EXPECTED PHONE:", ADMIN_PHONE_NUMBER);
         
-        // ✅ SAFE CHECK: Use the data the backend already sent us!
         if (user && user.is_admin && user.phone_number === ADMIN_PHONE_NUMBER) {
           localStorage.setItem('token', token);
           toast.success('خوش آمدید، مدیر عزیز!');
           navigate('/admin');
         } else {
+          console.error("🔥 ADMIN CHECK FAILED. is_admin:", user?.is_admin, "phone_match:", user?.phone_number === ADMIN_PHONE_NUMBER);
           toast.error('دسترسی غیرمجاز: این حساب کاربری مجاز به ورود نیست.');
         }
       } else {
+        console.error("🔥 VERIFY FAILED:", data);
         toast.error(data.detail || 'کد تایید اشتباه است.');
       }
     } catch (error) {
+      console.error("🔥 NETWORK ERROR:", error);
       toast.error('خطای شبکه');
     } finally {
       setLoading(false);
@@ -128,7 +132,7 @@ const AdminLogin = () => {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || otp.length !== 5}
               className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'در حال بررسی...' : 'ورود به پنل'}
