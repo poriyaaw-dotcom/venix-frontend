@@ -1,4 +1,3 @@
-// src/pages/AdminLogin.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiLock, FiPhone, FiShield, FiAlertCircle } from 'react-icons/fi';
@@ -6,12 +5,11 @@ import toast from 'react-hot-toast';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1 = Phone, 2 = OTP
+  const [step, setStep] = useState(1);
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ✅ The ONLY phone number allowed to access the admin panel
   const ADMIN_PHONE_NUMBER = '09127467261';
 
   const handleRequestOTP = async (e) => {
@@ -24,11 +22,11 @@ const AdminLogin = () => {
         body: JSON.stringify({ phone_number: phone }),
       });
       
+      const data = await res.json();
       if (res.ok) {
         toast.success('کد تایید ارسال شد');
         setStep(2);
       } else {
-        const data = await res.json();
         toast.error(data.detail || 'خطا در ارسال کد');
       }
     } catch (error) {
@@ -52,23 +50,15 @@ const AdminLogin = () => {
 
       if (res.ok) {
         const token = data.access_token;
+        const user = data.user;
         
-        // Decode token to check admin status and phone number
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-        const payload = JSON.parse(jsonPayload);
-
-        // ✅ DOUBLE SECURITY CHECK: Must be admin AND must be the exact phone number
-        const isCorrectNumber = payload.phone_number === ADMIN_PHONE_NUMBER || payload.sub === ADMIN_PHONE_NUMBER;
-        
-        if (payload.is_admin && isCorrectNumber) {
+        // ✅ SAFE CHECK: Use the data the backend already sent us!
+        if (user && user.is_admin && user.phone_number === ADMIN_PHONE_NUMBER) {
           localStorage.setItem('token', token);
           toast.success('خوش آمدید، مدیر عزیز!');
           navigate('/admin');
         } else {
           toast.error('دسترسی غیرمجاز: این حساب کاربری مجاز به ورود نیست.');
-          localStorage.removeItem('token'); // Immediately destroy any invalid token
         }
       } else {
         toast.error(data.detail || 'کد تایید اشتباه است.');

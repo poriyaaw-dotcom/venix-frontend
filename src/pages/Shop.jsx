@@ -50,7 +50,7 @@ const Shop = () => {
     
     const loadCategories = async () => {
       try {
-        const res = await fetch('https://api.venixpodshop.com/api/v1/products/categories');
+        const res = await fetch('http://localhost:8000/api/v1/products/categories');
         if (res.ok) {
           const data = await res.json();
           setCategories(data);

@@ -35,7 +35,7 @@ const ProductDetail = () => {
     };
     const loadReviews = async () => {
       try {
-        const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/product/${id}`);
+        const res = await fetch(`http://localhost:8000/api/v1/reviews/product/${id}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {}
     };
@@ -74,7 +74,7 @@ const ProductDetail = () => {
   const isOutOfStock = stockQty === null || stockQty === undefined || stockQty <= 0;
   const displayStockLimit = typeof stockQty === 'number' && stockQty > 0 ? stockQty : 999;
 
-  const imageUrl = product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `https://api.venixpodshop.com${product.image_url}`) : "";
+  const imageUrl = product.image_url ? (product.image_url.startsWith('http') ? product.image_url : `http://localhost:8000${product.image_url}`) : "";
   const jsonLd = {
     "@context": "https://schema.org/",
     "@type": "Product",
@@ -274,7 +274,7 @@ const ProductDetail = () => {
               const token = localStorage.getItem('token');
               if (!token) { alert('لطفاً ابتدا وارد حساب کاربری خود شوید.'); return; }
               try {
-                const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/?product_id=${id}`, {
+                const res = await fetch(`http://localhost:8000/api/v1/reviews/?product_id=${id}`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
                 });

@@ -54,7 +54,7 @@ function MobileBottomBar() {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetch('https://api.venixpodshop.com/api/v1/products/categories')
+    fetch('http://localhost:8000/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCategories(data);
