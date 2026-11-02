@@ -80,3 +80,18 @@ html, body {
   background: rgba(26, 26, 26, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
+
+/* ✅ Floating WhatsApp Animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pause animation on hover so it's easy to click */
+.animate-float:hover {
+  animation: none;
+}

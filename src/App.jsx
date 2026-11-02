@@ -1,6 +1,6 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Helmet, HelmetProvider } from 'react-helmet-async'; // ✅ BOTH are required!
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './Context/CartContext'; 
 import { Toaster } from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ import SalesSection from './components/SalesSection';
 import BlogSection from './components/BlogSection';
 import QASection from './components/QASection';
 import Footer from './components/Footer';
+import FloatingWhatsApp from './components/FloatingWhatsApp'; // ✅ ADDED
 
 // Pages
 import Shop from './pages/Shop';
@@ -30,7 +31,7 @@ import BlogDetail from './pages/BlogDetail';
 
 function App() {
   return (
-    <HelmetProvider> {/* ✅ This wrapper is required for Helmet to work */}
+    <HelmetProvider>
       <CartProvider>
         <Router>
           <Toaster 
@@ -47,7 +48,6 @@ function App() {
           />
           
           <Routes>
-            {/* ✅ Homepage with SEO Meta Tags */}
             <Route path="/" element={
               <>
                 <Helmet>
@@ -85,6 +85,10 @@ function App() {
             <Route path="/blog/:id" element={<BlogDetail />} />
             <Route path="/admin" element={<Admin />} /> 
           </Routes>
+
+          {/* ✅ ADDED: Floating WhatsApp Button (stays outside Routes so it's always visible) */}
+          <FloatingWhatsApp />
+          
         </Router>
       </CartProvider>
     </HelmetProvider>
