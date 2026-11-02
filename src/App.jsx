@@ -1,6 +1,6 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';  // ✅ Added this import
+import { Helmet, HelmetProvider } from 'react-helmet-async'; // ✅ BOTH are required!
 import { CartProvider } from './Context/CartContext'; 
 import { Toaster } from 'react-hot-toast';
 
@@ -30,10 +30,9 @@ import BlogDetail from './pages/BlogDetail';
 
 function App() {
   return (
-    <HelmetProvider>
+    <HelmetProvider> {/* ✅ This wrapper is required for Helmet to work */}
       <CartProvider>
         <Router>
-          {/* ✅ Added Toaster here, safely inside the Router */}
           <Toaster 
             position="top-center"
             toastOptions={{
