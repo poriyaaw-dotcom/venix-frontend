@@ -1,6 +1,6 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
+import { Helmet } from 'react-helmet-async';  // ✅ Added this import
 import { CartProvider } from './Context/CartContext'; 
 import { Toaster } from 'react-hot-toast';
 
