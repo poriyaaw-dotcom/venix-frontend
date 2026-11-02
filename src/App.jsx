@@ -13,7 +13,8 @@ import SalesSection from './components/SalesSection';
 import BlogSection from './components/BlogSection';
 import QASection from './components/QASection';
 import Footer from './components/Footer';
-import FloatingWhatsApp from './components/FloatingWhatsApp'; // ✅ ADDED
+import FloatingWhatsApp from './components/FloatingWhatsApp';
+import MobileBottomNav from './components/MobileBottomNav'; // ✅ ADDED
 
 // Pages
 import Shop from './pages/Shop';
@@ -86,8 +87,11 @@ function App() {
             <Route path="/admin" element={<Admin />} /> 
           </Routes>
 
-          {/* ✅ ADDED: Floating WhatsApp Button (stays outside Routes so it's always visible) */}
+          {/* ✅ Floating WhatsApp Button */}
           <FloatingWhatsApp />
+          
+          {/* ✅ Mobile Bottom Navigation (100% invisible on desktop) */}
+          <MobileBottomNav />
           
         </Router>
       </CartProvider>

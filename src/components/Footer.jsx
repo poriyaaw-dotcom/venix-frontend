@@ -7,26 +7,24 @@ import venixLogo from '../assets/venix-logo.png';
 const Footer = () => {
   const [categories, setCategories] = useState([]);
 
-  // Fetch the first 4 categories dynamically for the footer
   useEffect(() => {
     fetch('https://api.venixpodshop.ir/api/v1/products/categories')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setCategories(data.slice(0, 4)); // Only take the first 4
+          setCategories(data.slice(0, 4));
         }
       })
       .catch(err => console.error("Failed to load footer categories:", err));
   }, []);
 
   return (
-    <footer className="bg-background pt-16 pb-6 border-t border-gray/10">
+    // ✅ UPDATED: pb-24 for mobile (to clear the bottom nav), md:pb-6 for desktop (unchanged)
+    <footer className="bg-background pt-16 pb-24 md:pb-6 border-t border-gray/10">
       <div className="max-w-[1197px] mx-auto px-6">
         
-        {/* Dynamic Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
-          {/* Column 1: Brand & Description */}
           <div>
             <img src={venixLogo} alt="VENIX" className="h-12 w-auto object-contain mb-6" />
             <p className="text-gray-400 text-sm leading-relaxed">
@@ -35,7 +33,6 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Column 2: Contact Info (Updated) */}
           <div>
             <h4 className="text-lg font-bold text-white mb-6">تماس با ما</h4>
             <ul className="space-y-4 text-sm text-gray-400">
@@ -61,7 +58,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 3: Important Links (First 4 Categories) */}
           <div>
             <h4 className="text-lg font-bold text-white mb-6">لینک‌های مهم</h4>
             <ul className="space-y-4 text-sm text-gray-400">
@@ -74,7 +70,6 @@ const Footer = () => {
                   </li>
                 ))
               ) : (
-                // Fallback in case categories haven't loaded yet
                 <>
                   <li><Link to="/shop" className="hover:text-primary transition">دستگاه</Link></li>
                   <li><Link to="/shop" className="hover:text-primary transition">جویس</Link></li>
@@ -85,7 +80,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 4: Quick Access (Updated) */}
           <div>
             <h4 className="text-lg font-bold text-white mb-6">دسترسی سریع</h4>
             <ul className="space-y-4 text-sm text-gray-400">
@@ -98,7 +92,6 @@ const Footer = () => {
 
         </div>
 
-        {/* Bottom Bar */}
         <div className="border-t border-gray/10 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-gray-500 gap-4">
           <p>تمامی حقوق محفوظ و متعلق به VENIX می‌باشد.</p>
           <p>
