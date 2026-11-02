@@ -1,3 +1,4 @@
+// src/pages/Admin.jsx
 import toast from 'react-hot-toast';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -47,8 +48,10 @@ const Admin = () => {
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
   const imageUrlRef = useRef('');
   
+  // ✅ UPDATED: Added SEO fields to initial state
   const [productForm, setProductForm] = useState({
     title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '',
+    meta_title: '', meta_description: '', image_alt_text: '',
     variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }],
     specifications: ['']
   });
@@ -166,12 +169,16 @@ const Admin = () => {
       let productId = editingProduct ? editingProduct.id : null;
       const cleanSpecs = productForm.specifications.filter(s => s.trim() !== '');
 
+      // ✅ UPDATED: Added SEO fields to payload
       const basePayload = {
         title: productForm.title, title_en: productForm.title_en, slug: productForm.slug,
         description: productForm.description, image_url: imageUrlRef.current || productForm.image_url,
         brand_id: productForm.brand_id ? parseInt(productForm.brand_id) : null,
         category_id: parseInt(productForm.category_id),
-        specifications: cleanSpecs
+        specifications: cleanSpecs,
+        meta_title: productForm.meta_title,
+        meta_description: productForm.meta_description,
+        image_alt_text: productForm.image_alt_text
       };
 
       if (!editingProduct) {
@@ -207,7 +214,8 @@ const Admin = () => {
 
       toast.success(editingProduct ? 'محصول با موفقیت بروزرسانی شد!' : 'محصول با موفقیت ثبت شد!');
       setIsAddProductOpen(false); setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = '';
-      setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] });
+      // ✅ UPDATED: Reset state includes SEO fields
+      setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', meta_title: '', meta_description: '', image_alt_text: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] });
       
       const resList = await fetch(`${API_BASE_URL}/admin/products?page=${currentPage}&limit=10`, { headers });
       if (resList.ok) { const dataList = await resList.json(); setProductsList(Array.isArray(dataList) ? dataList : (dataList.items || [])); setTotalPages(dataList.total_pages || 1); }
@@ -242,9 +250,11 @@ const Admin = () => {
       const res = await fetch(`${API_BASE_URL}/admin/products/${product.id}`, { headers: { 'Authorization': `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
+        // ✅ UPDATED: Load SEO fields from backend response
         setProductForm({
           title: data.title || '', title_en: data.title_en || '', slug: data.slug || '', description: data.description || '', image_url: data.image_url || '',
           brand_id: data.brand_id ? String(data.brand_id) : '', category_id: data.category_id ? String(data.category_id) : '',
+          meta_title: data.meta_title || '', meta_description: data.meta_description || '', image_alt_text: data.image_alt_text || '',
           specifications: data.specifications && data.specifications.length > 0 ? data.specifications : [''],
           variants: data.variants && data.variants.length > 0 ? data.variants.map(v => ({
             id: v.id, sku: v.sku || '', price_normal: String(v.price_normal || ''), price_visitor: String(v.price_visitor || ''),
@@ -587,7 +597,7 @@ const Admin = () => {
                 <h1 className="text-2xl font-bold text-white">مدیریت محصولات {showDeactivatedOnly && <span className="text-red-400 text-lg">(فقط غیرفعال‌ها)</span>}</h1>
                 <div className="flex gap-2">
                   {showDeactivatedOnly && <button onClick={() => setShowDeactivatedOnly(false)} className="flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-bold transition">نمایش همه</button>}
-                  <button onClick={() => { setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = ''; setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); setIsAddProductOpen(true); setProductTab('base'); }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition"><FiPlus /> افزودن محصول جدید</button>
+                  <button onClick={() => { setEditingProduct(null); setUploadedImageUrl(''); imageUrlRef.current = ''; setProductForm({ title: '', title_en: '', slug: '', description: '', image_url: '', brand_id: '', category_id: '', meta_title: '', meta_description: '', image_alt_text: '', variants: [{ price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }], specifications: [''] }); setIsAddProductOpen(true); setProductTab('base'); }} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-bold transition"><FiPlus /> افزودن محصول جدید</button>
                 </div>
               </div>
               <div className="mb-4 no-print">
@@ -727,7 +737,7 @@ const Admin = () => {
               <form onSubmit={handleAddBlog} className="bg-white/[0.025] border border-white/10 rounded-xl p-6 mb-8 space-y-4">
                 <h3 className="text-lg font-bold text-primary mb-4">{editingBlogId ? 'ویرایش بلاگ' : 'افزودن بلاگ جدید'}</h3>
                 <input type="text" placeholder="عنوان بلاگ" value={newBlog.title} onChange={e => setNewBlog({...newBlog, title: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
-                <div className="relative"><label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-black/20 hover:bg-white/5 transition"><div className="flex flex-col items-center justify-center pt-5 pb-6"><svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><p className="text-xs text-gray-400">{newBlog.image_url ? 'تصویر انتخاب شد' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>{newBlog.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{newBlog.image_url}</p>}</div><input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog(prev => ({...prev, image_url: url}))); e.target.value = ''; }} disabled={uploadingImage} /></label>{uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}</div>
+                <div className="relative"><label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-xl cursor-pointer bg-black/20 hover:bg-white/5 transition"><div className="flex flex-col items-center justify-center pt-5 pb-6"><svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z"></path></svg><p className="text-xs text-gray-400">{newBlog.image_url ? 'تصویر انتخاب شد' : 'کلیک کنید یا تصویر را اینجا رها کنید'}</p>{newBlog.image_url && <p className="text-[10px] text-primary mt-1 truncate max-w-[200px]">{newBlog.image_url}</p>}</div><input type="file" className="hidden" accept="image/*" onChange={(e) => { handleImageUpload(e.target.files[0], (url) => setNewBlog(prev => ({...prev, image_url: url}))); e.target.value = ''; }} disabled={uploadingImage} /></label>{uploadingImage && <p className="text-xs text-primary mt-1 text-center">در حال آپلود...</p>}</div>
                 <textarea placeholder="متن بلاگ" value={newBlog.content} onChange={e => setNewBlog({...newBlog, content: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" required />
                 <div className="flex gap-3 no-print"><button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">{editingBlogId ? 'بروزرسانی' : 'انتشار بلاگ'}</button>{editingBlogId && <button type="button" onClick={() => { setEditingBlogId(null); setNewBlog({ title: '', content: '', image_url: '' }); }} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">انصراف</button>}</div>
               </form>
@@ -785,7 +795,15 @@ const Admin = () => {
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm rounded-2xl no-print">
               <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl w-full max-w-4xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4"><h2 className="text-xl font-bold text-white">{editingProduct ? 'ویرایش محصول' : 'افزودن محصول جدید'}</h2><button onClick={() => { setIsAddProductOpen(false); setEditingProduct(null); }} className="text-gray-400 hover:text-white"><FiX size={24} /></button></div>
-                <div className="flex border-b border-white/10 mb-6"><button onClick={() => setProductTab('base')} className={`py-3 px-6 font-bold transition ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button><button onClick={() => setProductTab('attrs')} className={`py-3 px-6 font-bold transition ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. مشخصات فنی</button><button onClick={() => setProductTab('variants')} className={`py-3 px-6 font-bold transition ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button></div>
+                
+                {/* ✅ UPDATED: Added SEO Tab Button */}
+                <div className="flex border-b border-white/10 mb-6 overflow-x-auto">
+                  <button onClick={() => setProductTab('base')} className={`py-3 px-4 md:px-6 font-bold transition whitespace-nowrap ${productTab === 'base' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۱. اطلاعات پایه</button>
+                  <button onClick={() => setProductTab('attrs')} className={`py-3 px-4 md:px-6 font-bold transition whitespace-nowrap ${productTab === 'attrs' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۲. مشخصات فنی</button>
+                  <button onClick={() => setProductTab('variants')} className={`py-3 px-4 md:px-6 font-bold transition whitespace-nowrap ${productTab === 'variants' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۳. واریانت‌ها</button>
+                  <button onClick={() => setProductTab('seo')} className={`py-3 px-4 md:px-6 font-bold transition whitespace-nowrap ${productTab === 'seo' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>۴. سئو (SEO)</button>
+                </div>
+
                 <div className="flex-1 overflow-y-auto pr-2 mb-6">
                   {productTab === 'base' && (
                     <div className="space-y-4">
@@ -812,8 +830,37 @@ const Admin = () => {
                   {productTab === 'variants' && (
                     <div className="space-y-4">{productForm.variants.map((variant, vIdx) => (<div key={vIdx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3"><div className="flex justify-between items-center"><h4 className="text-sm font-bold text-primary">واریانت #{vIdx + 1}</h4>{productForm.variants.length > 1 && <button onClick={() => { const newVariants = productForm.variants.filter((_, i) => i !== vIdx); setProductForm(prev => ({...prev, variants: newVariants})); }} className="text-red-400 hover:text-red-300"><FiTrash2 /></button>}</div><div><label className="text-xs text-gray-400 block mb-1">ویژگی‌های این واریانت (مثال: قرمز، 500ml)</label><input type="text" value={variant.attributes_text || ''} onChange={(e) => { const newVariants = [...productForm.variants]; newVariants[vIdx].attributes_text = e.target.value; setProductForm(prev => ({...prev, variants: newVariants})); }} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-primary" placeholder="قرمز، آبی، 500 میلی‌لیتر" /></div><div className="grid grid-cols-2 gap-3"><div><label className="block text-xs text-gray-400 mb-1">قیمت کاربر عادی</label><input type="number" placeholder="تومان" value={variant.price_normal || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_normal = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">قیمت ویزیتور</label><input type="number" placeholder="تومان" value={variant.price_visitor || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_visitor = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">قیمت مغازه‌دار</label><input type="number" placeholder="تومان" value={variant.price_shop_owner || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_shop_owner = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">قیمت عمده‌فروش</label><input type="number" placeholder="تومان" value={variant.price_wholesale || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].price_wholesale = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">درصد تخفیف (%)</label><input type="number" min="0" max="100" placeholder="مثال: 20" value={variant.discount_percent || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].discount_percent = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div><div><label className="block text-xs text-gray-400 mb-1">موجودی انبار</label><input type="number" placeholder="موجودی" value={variant.stock_quantity || ''} onChange={e => { const n = [...productForm.variants]; n[vIdx].stock_quantity = e.target.value; setProductForm(prev => ({...prev, variants: n})); }} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none" dir="ltr" /></div></div></div>))}<button onClick={() => setProductForm(prev => ({...prev, variants: [...prev.variants, { price_normal: '', price_visitor: '', price_shop_owner: '', price_wholesale: '', discount_percent: '', stock_quantity: '', selectedValueIds: [], attributes_text: '' }]}))} className="w-full py-3 border-2 border-dashed border-white/20 text-gray-400 rounded-xl hover:border-primary hover:text-primary transition font-bold">+ افزودن واریانت جدید</button></div>
                   )}
+                  
+                  {/* ✅ ADDED: SEO Tab Content */}
+                  {productTab === 'seo' && (
+                    <div className="space-y-4">
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h4 className="text-sm font-bold text-primary mb-4">تنظیمات سئو (SEO)</h4>
+                        <p className="text-xs text-gray-400 mb-4">این اطلاعات فقط در نتایج گوگل نمایش داده می‌شوند و تاثیری روی ظاهر سایت ندارند.</p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-gray-400 block mb-1">عنوان سئو (Meta Title) - حداکثر 60 کاراکتر</label>
+                            <input type="text" value={productForm.meta_title || ''} onChange={(e) => setProductForm(prev => ({...prev, meta_title: e.target.value}))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-primary" placeholder="مثال: خرید آیفون 15 پرو مکس با گارانتی اصل | ونیکس" maxLength="60" />
+                            <p className="text-[10px] text-gray-500 mt-1 text-left">{(productForm.meta_title || '').length}/60</p>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs text-gray-400 block mb-1">توضیحات سئو (Meta Description) - حداکثر 160 کاراکتر</label>
+                            <textarea value={productForm.meta_description || ''} onChange={(e) => setProductForm(prev => ({...prev, meta_description: e.target.value}))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-primary h-20" placeholder="توضیح کوتاه و جذاب برای نمایش در گوگل..." maxLength="160" />
+                            <p className="text-[10px] text-gray-500 mt-1 text-left">{(productForm.meta_description || '').length}/160</p>
+                          </div>
+
+                          <div>
+                            <label className="text-xs text-gray-400 block mb-1">متن جایگزین تصویر (Image Alt Text)</label>
+                            <input type="text" value={productForm.image_alt_text || ''} onChange={(e) => setProductForm(prev => ({...prev, image_alt_text: e.target.value}))} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-primary" placeholder="توصیف کوتاه تصویر محصول برای گوگل" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between pt-4 border-t border-white/10 no-print"><button onClick={() => { if (productTab === 'attrs') setProductTab('base'); else if (productTab === 'variants') setProductTab('attrs'); }} className={`px-6 py-3 rounded-xl font-bold transition ${productTab === 'base' ? 'invisible' : 'bg-white/5 text-white hover:bg-white/10'}`}>قبلی</button>{productTab === 'variants' || editingProduct ? <button onClick={handleCreateOrUpdateProduct} disabled={uploadingImage} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">{uploadingImage ? 'در حال آپلود...' : <><FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}</>}</button> : <button onClick={() => { if (productTab === 'base') setProductTab('attrs'); else if (productTab === 'attrs') setProductTab('variants'); }} className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition flex items-center gap-2">مرحله بعد</button>}</div>
+                <div className="flex justify-between pt-4 border-t border-white/10 no-print"><button onClick={() => { if (productTab === 'attrs') setProductTab('base'); else if (productTab === 'variants') setProductTab('attrs'); else if (productTab === 'seo') setProductTab('variants'); }} className={`px-6 py-3 rounded-xl font-bold transition ${productTab === 'base' ? 'invisible' : 'bg-white/5 text-white hover:bg-white/10'}`}>قبلی</button>{productTab === 'variants' || productTab === 'seo' || editingProduct ? <button onClick={handleCreateOrUpdateProduct} disabled={uploadingImage} className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">{uploadingImage ? 'در حال آپلود...' : <><FiCheck /> {editingProduct ? 'ذخیره تغییرات' : 'ثبت نهایی محصول'}</>}</button> : <button onClick={() => { if (productTab === 'base') setProductTab('attrs'); else if (productTab === 'attrs') setProductTab('variants'); }} className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition flex items-center gap-2">مرحله بعد</button>}</div>
               </div>
             </div>
           )}

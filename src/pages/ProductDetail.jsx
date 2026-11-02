@@ -70,15 +70,20 @@ const ProductDetail = () => {
   const isOutOfStock = stockQty === null || stockQty === undefined || stockQty <= 0;
   const displayStockLimit = typeof stockQty === 'number' && stockQty > 0 ? stockQty : 999;
 
+  // ✅ Smart SEO Fallbacks
+  const seoTitle = product.meta_title || `${product.title} | خرید ویپ و پاد سیستم - فروشگاه ونیکس`;
+  const seoDescription = product.meta_description || (product.description ? product.description.substring(0, 160) : `خرید ${product.title} با بهترین قیمت و ضمانت اصالت از فروشگاه ونیکس`);
+  const seoImage = product.image || product.image_url;
+
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
       <Helmet>
-        <title>{product.title} | خرید ویپ و پاد سیستم - فروشگاه ونیکس</title>
-        <meta name="description" content={product.description ? product.description.substring(0, 160) : `خرید ${product.title} با بهترین قیمت و ضمانت اصالت از فروشگاه ونیکس`} />
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
         <link rel="canonical" href={`https://venixpodshop.ir/product/${id}`} />
-        <meta property="og:title" content={product.title} />
-        <meta property="og:description" content={product.description ? product.description.substring(0, 160) : `خرید ${product.title} از فروشگاه ونیکس`} />
-        <meta property="og:image" content={product.image} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:image" content={seoImage} />
         <meta property="og:type" content="product" />
         <meta property="og:url" content={`https://venixpodshop.ir/product/${id}`} />
       </Helmet>
@@ -103,7 +108,7 @@ const ProductDetail = () => {
               </button>
               {hasDiscount && <div className="absolute top-8 left-8 z-10 bg-primary text-white text-xs font-bold px-4 py-2 rounded-full">فروش ویژه</div>}
               <div className="h-[300px] md:h-[420px] flex items-center justify-center">
-                <img src={product.image} alt={product.title} onError={(e) => { e.target.onerror = null; e.target.src = '/category-img.png'; }} className="max-h-[260px] md:max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
+                <img src={product.image || product.image_url} alt={product.image_alt_text || product.title} onError={(e) => { e.target.onerror = null; e.target.src = '/category-img.png'; }} className="max-h-[260px] md:max-h-[360px] max-w-[90%] object-contain drop-shadow-[0_25px_35px_rgba(0,0,0,0.45)]" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 md:gap-3 mt-4">
@@ -119,7 +124,7 @@ const ProductDetail = () => {
           <div className="flex flex-col">
             {brandName && <span className="inline-block bg-white/10 text-primary text-xs px-3 py-1 rounded-full font-bold mb-2 w-fit">برند: {brandName}</span>}
             <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white leading-tight">{product.title}</h1>
-            <p dir="ltr" className="text-sm text-gray-500 mt-2 text-right">{product.titleEn}</p>
+            <p dir="ltr" className="text-sm text-gray-500 mt-2 text-right">{product.titleEn || product.title_en}</p>
             <p className="text-sm text-gray-400 leading-7 mt-6">{product.description}</p>
             
             {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
@@ -178,7 +183,7 @@ const ProductDetail = () => {
 
                   addToCart(targetVariantId, quantity, { 
                     title: product.title, 
-                    titleEn: product.titleEn || '', 
+                    titleEn: product.title_en || '', 
                     price: vFinalPrice,
                     basePrice: vBasePrice,
                     discount: vDiscount, 
