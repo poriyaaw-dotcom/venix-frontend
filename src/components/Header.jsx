@@ -8,7 +8,7 @@ import venixLogo from '../assets/venix-logo.png';
 const Header = () => {
   const navigate = useNavigate();
   const [showCategories, setShowCategories] = useState(false);
-  const { cartCount } = useCart();
+  const { cartCount } = useCart(); // Kept for desktop version
   
   // Dynamic categories state fetched from backend
   const [categories, setCategories] = useState([]);
@@ -30,7 +30,7 @@ const Header = () => {
         console.error("Failed to load categories:", err);
         setCategories([]);
       });
-    }, []);
+  }, []);
 
   return (
     <header className="bg-background text-primary sticky top-0 z-50 shadow-lg">
@@ -43,12 +43,11 @@ const Header = () => {
           <input type="text" placeholder="جستجو در محصولات..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full h-[36px] px-3 pr-8 rounded-full bg-gray text-background placeholder-background/60 focus:outline-none text-xs" />
           <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-background/70"><FiSearch className="text-sm" /></button>
         </form>
-        <Link to="/cart" className="relative text-gray-200 p-2 shrink-0">
-          <FiShoppingCart className="text-xl" />
-          <span className="absolute -top-1 -right-1 bg-button text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-            {cartCount > 0 ? cartCount : '۰'}
-          </span>
-        </Link>
+        
+        {/* ✅ CHANGED: Mobile cart icon replaced with Phone icon */}
+        <a href="tel:09127467261" className="relative text-gray-200 p-2 shrink-0 hover:text-primary transition">
+          <FiPhone className="text-xl" />
+        </a>
       </div>
 
       {/* --- DESKTOP HEADER --- */}
@@ -105,7 +104,7 @@ const Header = () => {
           </form>
         </div>
 
-        {/* Left Side: Icons */}
+        {/* Left Side: Icons (100% UNCHANGED) */}
         <div className="flex items-center gap-5 text-xl justify-end">
           <a href="tel:09127467261" className="hover:scale-110 transition text-gray-200 hover:text-primary"><FiPhone /></a>
           <button 
