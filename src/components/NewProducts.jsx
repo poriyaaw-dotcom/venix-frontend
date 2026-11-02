@@ -13,7 +13,7 @@ const NewProducts = () => {
     const fetchNewProducts = async () => {
       try {
         // Fetch newest products from backend
-        const res = await fetch('https://api.venixpodshop.com/api/v1/products/search?q=&sort_by=newest');
+        const res = await fetch('http://localhost:8000/api/v1/products/search?q=&sort_by=newest');
         const data = await res.json();
         
         // Map backend data to ProductCard expected format and limit to 10
@@ -22,7 +22,7 @@ const NewProducts = () => {
           title: p.title,
           titleEn: p.title_en,
           name: p.title, // Fallback for ProductCard
-          image: p.image_url ? (p.image_url.startsWith('http') ? p.image_url : `https://api.venixpodshop.com${p.image_url}`) : '/category-img.png',
+          image: p.image_url ? (p.image_url.startsWith('http') ? p.image_url : `http://localhost:8000${p.image_url}`) : '/category-img.png',
           variants: p.variants || [] // Keep variants array intact for ProductCard!
         }));
         setProducts(mapped);

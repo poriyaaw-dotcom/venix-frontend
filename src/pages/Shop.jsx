@@ -1,6 +1,6 @@
-// src/pages/Shop.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { FiChevronLeft, FiChevronRight, FiSliders, FiX } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -11,13 +11,11 @@ import SortDropdown from '../components/shop/SortDropdown';
 import { fetchProducts, toFarsiNumber } from '../utils/api';
 
 const Shop = () => {
-  // 1. Get URL parameters
   const [searchParams] = useSearchParams();
   const urlSearchQuery = searchParams.get('q') || '';
   const urlCategory = searchParams.get('category') || '';
   const urlBrand = searchParams.get('brand') || '';
 
-  // 2. Initialize state
   const [filters, setFilters] = useState({ 
     categories: urlCategory ? [urlCategory] : [], 
     brands: urlBrand ? [urlBrand] : [], 
@@ -31,49 +29,39 @@ const Shop = () => {
   const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 12;
 
-  // 3. 🚨 CRITICAL FIX: Sync filters with URL changes in real-time!
   useEffect(() => {
     setFilters(prev => ({
       ...prev,
       categories: urlCategory ? [urlCategory] : [],
       brands: urlBrand ? [urlBrand] : []
     }));
-    setCurrentPage(1); // Reset to page 1 when filter changes
+    setCurrentPage(1);
   }, [urlCategory, urlBrand]);
 
-  // 4. Load products on mount
   useEffect(() => {
     const loadProducts = async () => {
       setIsLoading(true);
       const data = await fetchProducts();
-      console.log("🔥 PRODUCTS LOADED. First product category:", data[0]?.category);
-      console.log("🔥 CURRENT URL CATEGORY:", urlCategory);
       setAllProducts(data);
       setIsLoading(false);
     };
     loadProducts();
   }, []);
 
-  // 5. Filter logic
   const filteredProducts = allProducts.filter((product) => {
     const prodCategory = product.category || product.category_name || 'دستگاه';
     const prodBrand = product.brand || product.brand_name || 'generic';
-
     const categoryMatch = filters.categories.length === 0 || filters.categories.includes(prodCategory);
     const brandMatch = filters.brands.length === 0 || filters.brands.includes(prodBrand);
-    
     const finalPrice = product.discountPrice || product.price;
     const priceMatch = finalPrice >= filters.priceRange[0] && finalPrice <= filters.priceRange[1];
-    
     const searchLower = urlSearchQuery.toLowerCase();
     const searchMatch = searchLower === '' || 
       (product.title && product.title.toLowerCase().includes(searchLower)) || 
       (product.titleEn && product.titleEn.toLowerCase().includes(searchLower));
-
     return categoryMatch && brandMatch && priceMatch && searchMatch;
   });
 
-  // 6. Sort logic
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const priceA = a.discountPrice || a.price;
     const priceB = b.discountPrice || b.price;
@@ -102,6 +90,16 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200">
+      <Helmet>
+        <title>خرید ویپ، پاد سیستم و جویس | فروشگاه ونیکس</title>
+        <meta name="description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت و ضمانت اصالت کالا در فروشگاه ونیکس." />
+        <link rel="canonical" href="https://venixpodshop.ir/shop" />
+        <meta property="og:title" content="خرید ویپ، پاد سیستم و جویس | فروشگاه ونیکس" />
+        <meta property="og:description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت." />
+        <meta property="og:url" content="https://venixpodshop.ir/shop" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       <Header />
       <Breadcrumb />
       <section id="shop-section" className="my-[35px] scroll-mt-24">

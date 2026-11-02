@@ -1,7 +1,7 @@
 // src/pages/Contact.jsx
-
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async'; // ✅ Added Helmet import
 import { FiPhone, FiMail, FiMapPin, FiClock, FiChevronLeft } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -9,6 +9,17 @@ import Footer from '../components/Footer';
 const Contact = () => {
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
+      {/* ✅ SEO Meta Tags for Contact Page */}
+      <Helmet>
+        <title>تماس با ونیکس | پشتیبانی، آدرس و ساعات کاری فروشگاه</title>
+        <meta name="description" content="راه‌های ارتباطی با فروشگاه ونیکس. تماس تلفنی، آدرس فروشگاه در بازار حضرتی تهران و ساعات کاری پشتیبانی تخصصی ویپ و پاد سیستم." />
+        <link rel="canonical" href="https://venixpodshop.ir/contact" />
+        <meta property="og:title" content="تماس با ونیکس | پشتیبانی و آدرس فروشگاه" />
+        <meta property="og:description" content="راه‌های ارتباطی با فروشگاه ونیکس. تماس تلفنی، آدرس فروشگاه در تهران و ساعات کاری پشتیبانی." />
+        <meta property="og:url" content="https://venixpodshop.ir/contact" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       <Header />
 
       {/* Breadcrumb */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { FiChevronLeft, FiShoppingCart, FiStar, FiSend, FiHeart, FiMinus, FiPlus, FiCheck, FiTruck, FiShield, FiSettings } from 'react-icons/fi';
 import { useCart } from '../Context/CartContext';
 import { fetchProductById, formatPrice } from '../utils/api';
@@ -24,6 +25,8 @@ const ProductDetail = () => {
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const { addToCart } = useCart();
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const loadProduct = async () => {
       setLoading(true);
@@ -33,13 +36,13 @@ const ProductDetail = () => {
     };
     const loadReviews = async () => {
       try {
-        const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/product/${id}`);
+        const res = await fetch(`${API_URL}/reviews/product/${id}`);
         if (res.ok) setReviews(await res.json());
       } catch (err) {}
     };
     loadProduct();
     loadReviews();
-  }, [id]);
+  }, [id, API_URL]);
 
   useEffect(() => {
     if (product && product.variants && product.variants.length > 0) {
@@ -59,8 +62,6 @@ const ProductDetail = () => {
   );
 
   const selectedVariant = product?.variants?.find(v => v.id === selectedVariantId) || product?.variants?.[0];
-  
-  // ✅ final_price is the authoritative price for the current user's group
   const displayPrice = selectedVariant ? (selectedVariant.final_price || selectedVariant.base_price || product.price) : product.price;
   const hasDiscount = selectedVariant ? (selectedVariant.discount_percent > 0) : (product.discount > 0);
   const brandName = product.brand || product.brand_name || null;
@@ -71,6 +72,17 @@ const ProductDetail = () => {
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200">
+      <Helmet>
+        <title>{product.title} | خرید ویپ و پاد سیستم - فروشگاه ونیکس</title>
+        <meta name="description" content={product.description ? product.description.substring(0, 160) : `خرید ${product.title} با بهترین قیمت و ضمانت اصالت از فروشگاه ونیکس`} />
+        <link rel="canonical" href={`https://venixpodshop.ir/product/${id}`} />
+        <meta property="og:title" content={product.title} />
+        <meta property="og:description" content={product.description ? product.description.substring(0, 160) : `خرید ${product.title} از فروشگاه ونیکس`} />
+        <meta property="og:image" content={product.image} />
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={`https://venixpodshop.ir/product/${id}`} />
+      </Helmet>
+
       <Header />
       <div className="max-w-[1240px] mx-auto px-4 pt-6">
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -160,8 +172,6 @@ const ProductDetail = () => {
                   if (isOutOfStock) return;
                   const targetVariantId = selectedVariantId || (product.variants && product.variants.length > 0 ? product.variants[0].id : product.id);
                   const maxStock = selectedVariant?.stock_quantity || 999; 
-                  
-                  // ✅ FIX: Pass final_price as the main price (it's already calculated for the user's group)
                   const vBasePrice = selectedVariant?.base_price || product.price;
                   const vFinalPrice = selectedVariant?.final_price || vBasePrice;
                   const vDiscount = selectedVariant?.discount_percent || 0;
@@ -169,8 +179,8 @@ const ProductDetail = () => {
                   addToCart(targetVariantId, quantity, { 
                     title: product.title, 
                     titleEn: product.titleEn || '', 
-                    price: vFinalPrice,       // ✅ The actual price to pay
-                    basePrice: vBasePrice,    // ✅ For strikethrough display in cart
+                    price: vFinalPrice,
+                    basePrice: vBasePrice,
                     discount: vDiscount, 
                     discountPrice: vFinalPrice, 
                     image: product.image || product.image_url || '', 
@@ -237,7 +247,7 @@ const ProductDetail = () => {
               const token = localStorage.getItem('token');
               if (!token) { alert('لطفاً ابتدا وارد حساب کاربری خود شوید.'); return; }
               try {
-                const res = await fetch(`https://api.venixpodshop.com/api/v1/reviews/?product_id=${id}`, {
+                const res = await fetch(`${API_URL}/reviews/?product_id=${id}`, {
                   method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                   body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
                 });
