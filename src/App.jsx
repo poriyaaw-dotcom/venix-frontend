@@ -1,4 +1,5 @@
 // src/App.jsx
+import { useEffect } from 'react'; // ✅ REQUIRED for the admin redirect
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './Context/CartContext'; 
@@ -14,7 +15,7 @@ import BlogSection from './components/BlogSection';
 import QASection from './components/QASection';
 import Footer from './components/Footer';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
-import MobileBottomNav from './components/MobileBottomNav'; // ✅ ADDED
+import MobileBottomNav from './components/MobileBottomNav';
 
 // Pages
 import Shop from './pages/Shop';
@@ -31,6 +32,16 @@ import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail'; 
 
 function App() {
+  // ✅ Auto-redirect to /admin if accessed via admin subdomain
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    if (hostname === 'admin.venixpodshop.ir' || hostname === 'admin.venixpodshop.com') {
+      if (window.location.pathname === '/') {
+        window.location.replace('/admin');
+      }
+    }
+  }, []);
+
   return (
     <HelmetProvider>
       <CartProvider>
