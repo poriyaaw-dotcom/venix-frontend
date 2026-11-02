@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useEffect } from 'react'; // ✅ REQUIRED for the admin redirect
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './Context/CartContext'; 
@@ -27,18 +27,26 @@ import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import PaymentResult from './pages/PaymentResult';
 import Admin from './pages/Admin';
+import AdminLogin from './pages/AdminLogin'; // ✅ NEW IMPORT
 import CardToCardPayment from './pages/CardToCardPayment';
 import Blog from './pages/Blog';
 import BlogDetail from './pages/BlogDetail'; 
 
 function App() {
-  // ✅ Auto-redirect to /admin if accessed via admin subdomain
+  // ✅ ADVANCED SUBDOMAIN & PATH REDIRECT LOGIC
   useEffect(() => {
     const hostname = window.location.hostname;
-    if (hostname === 'admin.venixpodshop.ir' || hostname === 'admin.venixpodshop.com') {
-      if (window.location.pathname === '/') {
-        window.location.replace('/admin');
-      }
+    const pathname = window.location.pathname;
+
+    // 1. If on main domain but trying to access /admin, redirect to admin subdomain
+    if ((hostname === 'venixpodshop.ir' || hostname === 'venixpodshop.com') && pathname.startsWith('/admin')) {
+      const newUrl = `https://admin.${hostname}${pathname === '/admin' ? '/admin-login' : pathname}`;
+      window.location.replace(newUrl);
+    }
+
+    // 2. If on admin subdomain and at root path, redirect to /admin-login
+    if ((hostname === 'admin.venixpodshop.ir' || hostname === 'admin.venixpodshop.com') && pathname === '/') {
+      window.location.replace('/admin-login');
     }
   }, []);
 
@@ -95,13 +103,13 @@ function App() {
             <Route path="/card-to-card" element={<CardToCardPayment />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:id" element={<BlogDetail />} />
+            
+            {/* ✅ ADMIN ROUTES */}
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin" element={<Admin />} /> 
           </Routes>
 
-          {/* ✅ Floating WhatsApp Button */}
           <FloatingWhatsApp />
-          
-          {/* ✅ Mobile Bottom Navigation (100% invisible on desktop) */}
           <MobileBottomNav />
           
         </Router>
