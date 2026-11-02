@@ -1,7 +1,8 @@
 // src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { CartProvider } from './Context/CartContext'; 
-import { Toaster } from 'react-hot-toast'; // ✅ Added Toaster import
+import { Toaster } from 'react-hot-toast';
 
 // Components
 import Header from './components/Header';
@@ -29,50 +30,65 @@ import BlogDetail from './pages/BlogDetail';
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        {/* ✅ Added Toaster here, safely inside the Router */}
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: '#1a1a1a',
-              color: '#fff',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              fontSize: '14px'
-            }
-          }}
-        />
-        
-        <Routes>
-          <Route path="/" element={
-            <div className="min-h-screen font-sans">
-              <Header />
-              <HeroSlider />
-              <MainCategories />
-              <NewProducts />
-              <SalesSection />
-              <BlogSection />
-              <QASection />
-              <Footer />
-            </div>
-          } />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/payment-result" element={<PaymentResult />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/card-to-card" element={<CardToCardPayment />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:id" element={<BlogDetail />} />
-          <Route path="/admin" element={<Admin />} /> 
-        </Routes>
-      </Router>
-    </CartProvider>
+    <HelmetProvider>
+      <CartProvider>
+        <Router>
+          {/* ✅ Added Toaster here, safely inside the Router */}
+          <Toaster 
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#1a1a1a',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                fontSize: '14px'
+              }
+            }}
+          />
+          
+          <Routes>
+            {/* ✅ Homepage with SEO Meta Tags */}
+            <Route path="/" element={
+              <>
+                <Helmet>
+                  <title>فروشگاه ونیکس | خرید ویپ، پاد سیستم، جویس و لوازم جانبی</title>
+                  <meta name="description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت و ضمانت اصالت کالا. ارسال سریع به سراسر ایران. فروشگاه ونیکس" />
+                  <meta name="keywords" content="ویپ, پاد سیستم, جویس, الکترونیک سیگار, ونیکس, خرید ویپ, vape, pod system" />
+                  <link rel="canonical" href="https://venixpodshop.ir/" />
+                  <meta property="og:title" content="فروشگاه ونیکس | خرید ویپ، پاد سیستم، جویس" />
+                  <meta property="og:description" content="خرید آنلاین انواع ویپ، پاد سیستم و جویس با بهترین قیمت" />
+                  <meta property="og:url" content="https://venixpodshop.ir/" />
+                  <meta property="og:type" content="website" />
+                </Helmet>
+                <div className="min-h-screen font-sans">
+                  <Header />
+                  <HeroSlider />
+                  <MainCategories />
+                  <NewProducts />
+                  <SalesSection />
+                  <BlogSection />
+                  <QASection />
+                  <Footer />
+                </div>
+              </>
+            } />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/payment-result" element={<PaymentResult />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/card-to-card" element={<CardToCardPayment />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
+            <Route path="/admin" element={<Admin />} /> 
+          </Routes>
+        </Router>
+      </CartProvider>
+    </HelmetProvider>
   );
 }
 
