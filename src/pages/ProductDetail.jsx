@@ -86,6 +86,35 @@ const ProductDetail = () => {
         <meta property="og:image" content={seoImage} />
         <meta property="og:type" content="product" />
         <meta property="og:url" content={`https://venixpodshop.ir/product/${id}`} />
+        
+        {/* ✅ ADDED: JSON-LD Structured Data for Google Rich Snippets */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": product.title,
+            "image": seoImage,
+            "description": seoDescription,
+            "sku": selectedVariant?.sku || `VENIX-${product.id}`,
+            "brand": {
+              "@type": "Brand",
+              "name": brandName || "ونیکس"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": `https://venixpodshop.ir/product/${id}`,
+              "priceCurrency": "IRT",
+              "price": Number(displayPrice) || 0,
+              "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+              "itemCondition": "https://schema.org/NewCondition"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": product.average_rating ? String(product.average_rating) : "0",
+              "reviewCount": String(product.review_count || 0)
+            }
+          })}
+        </script>
       </Helmet>
 
       <Header />

@@ -11,10 +11,12 @@ const BlogDetail = () => {
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/blog/${id}`);
+        const res = await fetch(`${API_URL}/blog/${id}`);
         if (res.ok) {
           const data = await res.json();
           setBlog(data);
@@ -29,24 +31,27 @@ const BlogDetail = () => {
       }
     };
     fetchBlog();
-  }, [id, navigate]);
+  }, [id, navigate, API_URL]);
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-white">در حال بارگذاری...</div>;
   if (!blog) return null;
 
   const imageUrl = blog.image_url 
-    ? (blog.image_url.startsWith('http') ? blog.image_url : `http://localhost:8000${blog.image_url}`)
+    ? (blog.image_url.startsWith('http') ? blog.image_url : `${API_URL.replace('/api/v1', '')}${blog.image_url}`)
     : null;
+
+  // ✅ Smart SEO Fallbacks
+  const seoTitle = blog.meta_title || `${blog.title} | مجله آموزشی ونیکس`;
+  const seoDescription = blog.meta_description || (blog.content ? blog.content.substring(0, 160) : 'مطالعه مقاله تخصصی در مجله آموزشی فروشگاه ونیکس');
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
-      {/* ✅ Dynamic SEO Meta Tags for Single Blog Post */}
       <Helmet>
-        <title>{blog.title} | مجله آموزشی ونیکس</title>
-        <meta name="description" content={blog.content ? blog.content.substring(0, 160) : 'مطالعه مقاله تخصصی در مجله آموزشی فروشگاه ونیکس'} />
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
         <link rel="canonical" href={`https://venixpodshop.ir/blog/${id}`} />
-        <meta property="og:title" content={blog.title} />
-        <meta property="og:description" content={blog.content ? blog.content.substring(0, 160) : 'مطالعه مقاله تخصصی در مجله آموزشی فروشگاه ونیکس'} />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
         {imageUrl && <meta property="og:image" content={imageUrl} />}
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`https://venixpodshop.ir/blog/${id}`} />
@@ -65,7 +70,7 @@ const BlogDetail = () => {
         
         {imageUrl && (
           <div className="w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden mb-6 md:mb-8 bg-gray-800 shadow-2xl">
-            <img src={imageUrl} alt={blog.title} className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={blog.image_alt_text || blog.title} className="w-full h-full object-cover" />
           </div>
         )}
         

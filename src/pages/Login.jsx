@@ -5,7 +5,7 @@ import { FiUser, FiLock, FiArrowLeft, FiBriefcase } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = 'https://api.venixpodshop.ir/api/v1';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -23,12 +23,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // ✅ NEW: Track if OTP has been sent at least once
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Countdown timer effect
   useEffect(() => {
     if (cooldown > 0) {
       const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
@@ -36,7 +34,28 @@ const Login = () => {
     }
   }, [cooldown]);
 
-  // Request OTP function with error handling
+  // ✅ NEW: Smooth typing, auto-converts Persian/Arabic to English, but doesn't force "09" while typing
+  const handlePhoneChange = (e) => {
+    let value = e.target.value;
+    
+    // 1. Convert Persian/Arabic numerals to English
+    const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+    const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+    for (let i = 0; i < 10; i++) {
+      value = value.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+    }
+    
+    // 2. Remove any non-digit characters (letters, symbols, spaces)
+    value = value.replace(/\D/g, '');
+    
+    // 3. Limit to exactly 11 digits max
+    if (value.length > 11) {
+      value = value.slice(0, 11);
+    }
+    
+    setPhone(value);
+  };
+
   const requestOTP = async () => {
     setErrorMessage('');
     try {
@@ -55,7 +74,6 @@ const Login = () => {
       
       if (!res.ok) throw new Error('Failed to send OTP');
       
-      // ✅ Mark as sent and start cooldown
       setIsOtpSent(true);
       setCooldown(60);
     } catch (err) {
@@ -66,6 +84,13 @@ const Login = () => {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
+    
+    // ✅ STRICT VALIDATION ON SUBMIT: Must be exactly 11 digits and start with 09
+    if (phone.length !== 11 || !phone.startsWith('09')) {
+      setError('شماره موبایل نامعتبر است. فرمت صحیح: ۰۹xxxxxxxxx');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -76,8 +101,8 @@ const Login = () => {
       });
       if (res.ok) {
         setStep(2);
-        setIsOtpSent(true); // ✅ Mark as sent
-        setCooldown(60);    // ✅ Start cooldown
+        setIsOtpSent(true);
+        setCooldown(60);
       } else {
         setError('خطا در ارسال کد');
       }
@@ -99,7 +124,6 @@ const Login = () => {
         body: JSON.stringify({ phone_number: phone, otp_code: otp })
       });
       
-      // Handle 429 Too Many Requests
       if (res.status === 429) {
         const data = await res.json();
         setErrorMessage(data.detail || 'تعداد تلاش‌های ناموفق بیش از حد است');
@@ -119,7 +143,7 @@ const Login = () => {
         }
       } else {
         setError(data.detail || 'کد نامعتبر است');
-        setOtp(''); // ✅ Automatically clear the wrong code
+        setOtp('');
       }
     } catch { 
       setError('خطای شبکه'); 
@@ -165,6 +189,9 @@ const Login = () => {
     }
   };
 
+  // Helper to check if the phone number is currently valid (for button styling)
+  const isPhoneValid = phone.length === 11 && phone.startsWith('09');
+
   return (
     <div dir="rtl" className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
       <Header />
@@ -188,10 +215,24 @@ const Login = () => {
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div className="relative">
                 <FiUser className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="09XXXXXXXXX" required className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 md:py-4 text-white outline-none focus:border-primary transition" dir="ltr" />
+                <input 
+                  type="tel" 
+                  value={phone} 
+                  onChange={handlePhoneChange} 
+                  placeholder="۰۹xxxxxxxxx" 
+                  required 
+                  maxLength="11"
+                  inputMode="numeric"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 md:py-4 text-white outline-none focus:border-primary transition" 
+                  dir="ltr" 
+                />
               </div>
               
-              <button type="submit" disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition flex items-center justify-center gap-2">
+              <button 
+                type="submit" 
+                disabled={loading || !isPhoneValid} 
+                className={`w-full font-bold py-3.5 md:py-4 rounded-xl transition flex items-center justify-center gap-2 ${isPhoneValid ? 'bg-primary hover:bg-primary/90 text-white' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+              >
                 {loading ? '...' : 'دریافت کد تایید'} <FiArrowLeft />
               </button>
             </form>
@@ -201,10 +242,20 @@ const Login = () => {
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="relative">
                 <FiLock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="12345" required maxLength="5" inputMode="numeric" className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 md:py-4 text-white text-center text-xl md:text-2xl tracking-widest outline-none focus:border-primary transition" dir="ltr" />
+                <input 
+                  type="text" 
+                  value={otp} 
+                  onChange={e => setOtp(e.target.value)} 
+                  placeholder="12345" 
+                  required 
+                  maxLength="5" 
+                  inputMode="numeric" 
+                  autoComplete="one-time-code"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl pr-12 pl-4 py-3 md:py-4 text-white text-center text-xl md:text-2xl tracking-widest outline-none focus:border-primary transition" 
+                  dir="ltr" 
+                />
               </div>
               
-              {/* ✅ ONLY show resend/countdown AFTER the first code is sent */}
               {isOtpSent && cooldown > 0 && (
                 <p className="text-center text-gray-400 text-sm mb-4">
                   ارسال مجدد کد در {cooldown} ثانیه

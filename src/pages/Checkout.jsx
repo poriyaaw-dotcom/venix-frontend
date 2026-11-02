@@ -12,7 +12,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ 
     province: '', city: '', full_address: '', postal_code: '', phone: '', 
-    payment_method: 'card_to_card' // NEW LINE
+    payment_method: 'card_to_card'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +23,7 @@ const Checkout = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetch('http://localhost:8000/api/v1/auth/me/addresses', {
+      fetch(`${import.meta.env.VITE_API_URL}/auth/me/addresses`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.ok ? res.json() : null)
@@ -68,6 +68,12 @@ const Checkout = () => {
       return;
     }
 
+    // ✅ NEW: Block Cash on Delivery if province is NOT Tehran
+    if (formData.payment_method === 'cash_on_delivery' && formData.province.trim() !== 'تهران') {
+      setError('پرداخت درب منزل فقط برای شهر تهران امکان‌پذیر است. لطفاً روش پرداخت را تغییر دهید یا آدرس خود را به تهران تغییر دهید.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -83,13 +89,12 @@ const Checkout = () => {
           postal_code: formData.postal_code,
           phone: formData.phone
         },
-        payment_method: formData.payment_method // NEW LINE
+        payment_method: formData.payment_method
       };
 
       const paymentData = await createOrderAndPay(checkoutPayload);
       clearCart();
       
-      // NEW LOGIC: Redirect based on payment method
       if (formData.payment_method === 'cash_on_delivery') {
         navigate(`/profile?tab=orders&success=cod`);
       } else {
@@ -188,7 +193,6 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* NEW PAYMENT METHOD UI */}
             <div className="mb-6 md:mb-8">
               <label className="block text-sm font-medium text-gray-400 mb-3">روش پرداخت</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,6 +207,16 @@ const Checkout = () => {
                   <span className="font-bold text-white">پرداخت درب منزل</span>
                 </label>
               </div>
+
+              {/* ✅ NEW: Tehran-Only Warning for Cash on Delivery */}
+              {formData.payment_method === 'cash_on_delivery' && (
+                <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3 animate-fadeIn">
+                  <FiAlertCircle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-yellow-200 leading-relaxed">
+                    <span className="font-bold">توجه:</span> پرداخت درب منزل <span className="font-bold">فقط برای شهر تهران</span> امکان‌پذیر است. اگر در شهر دیگری هستید، لطفاً روش پرداخت «کارت به کارت» را انتخاب کنید.
+                  </p>
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={loading} className={`w-full bg-button hover:bg-button/90 text-white font-bold py-3.5 md:py-4 rounded-xl transition shadow-lg shadow-button/20 flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
