@@ -5,7 +5,7 @@ import { FiUser, FiLock, FiArrowLeft, FiBriefcase } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_BASE_URL = 'https://api.venixpodshop.ir/api/v1';
+const API_BASE_URL = 'http://localhost:8000/api/v1'; // Will be replaced with live URL during build
 
 const Login = () => {
   const navigate = useNavigate();
@@ -34,26 +34,50 @@ const Login = () => {
     }
   }, [cooldown]);
 
-  // ✅ NEW: Smooth typing, auto-converts Persian/Arabic to English, but doesn't force "09" while typing
+  // ✅ Smart Phone Number Validation & Persian-to-English Conversion
   const handlePhoneChange = (e) => {
     let value = e.target.value;
     
-    // 1. Convert Persian/Arabic numerals to English
     const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
     const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
     for (let i = 0; i < 10; i++) {
       value = value.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
     }
     
-    // 2. Remove any non-digit characters (letters, symbols, spaces)
     value = value.replace(/\D/g, '');
     
-    // 3. Limit to exactly 11 digits max
+    if (value.length > 0 && !value.startsWith('09')) {
+      if (value.startsWith('9')) {
+        value = '0' + value;
+      } else {
+        value = '09';
+      }
+    }
+    
     if (value.length > 11) {
       value = value.slice(0, 11);
     }
     
     setPhone(value);
+  };
+
+  // ✅ NEW: Smart OTP Validation (Converts Farsi/Arabic to English, blocks letters)
+  const handleOtpChange = (e) => {
+    let value = e.target.value;
+    
+    const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+    const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+    for (let i = 0; i < 10; i++) {
+      value = value.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+    }
+    
+    value = value.replace(/\D/g, '');
+    
+    if (value.length > 5) {
+      value = value.slice(0, 5);
+    }
+    
+    setOtp(value);
   };
 
   const requestOTP = async () => {
@@ -84,13 +108,10 @@ const Login = () => {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    
-    // ✅ STRICT VALIDATION ON SUBMIT: Must be exactly 11 digits and start with 09
     if (phone.length !== 11 || !phone.startsWith('09')) {
       setError('شماره موبایل نامعتبر است. فرمت صحیح: ۰۹xxxxxxxxx');
       return;
     }
-
     setLoading(true);
     setError('');
     try {
@@ -189,7 +210,6 @@ const Login = () => {
     }
   };
 
-  // Helper to check if the phone number is currently valid (for button styling)
   const isPhoneValid = phone.length === 11 && phone.startsWith('09');
 
   return (
@@ -242,10 +262,13 @@ const Login = () => {
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="relative">
                 <FiLock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                {/* ✅ UPDATED: Added id, name, and handleOtpChange for perfect mobile autofill and Farsi blocking */}
                 <input 
-                  type="text" 
+                  type="text"
+                  id="otp"
+                  name="otp"
                   value={otp} 
-                  onChange={e => setOtp(e.target.value)} 
+                  onChange={handleOtpChange} 
                   placeholder="12345" 
                   required 
                   maxLength="5" 
