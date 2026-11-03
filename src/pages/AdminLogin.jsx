@@ -75,7 +75,7 @@ const AdminLogin = () => {
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    if (otp.length < 4) {
+    if (otp.length < 5) {
       setError('کد تایید نامعتبر است.');
       return;
     }
@@ -174,16 +174,16 @@ const AdminLogin = () => {
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-6">
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-400 mb-2 text-center">کد تایید ۴ رقمی</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2 text-center">کد تایید ۵ رقمی</label>
                 <div className="relative">
                   <FiLock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <input 
                     type="text"
                     value={otp} 
                     onChange={handleOtpChange} 
-                    placeholder="----" 
+                    placeholder="-----" 
                     required 
-                    maxLength="4" 
+                    maxLength="5" 
                     inputMode="numeric" 
                     autoComplete="one-time-code"
                     className="w-full bg-black/40 border border-white/10 rounded-xl pr-12 pl-4 py-4 text-white text-center text-2xl tracking-[0.5em] outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50 transition-all" 
