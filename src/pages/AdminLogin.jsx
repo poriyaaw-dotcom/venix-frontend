@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiShield, FiLock, FiArrowLeft, FiAlertCircle } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.venixpodshop.ir';
-const ADMIN_PHONE_NUMBER = '09127467261'; // ✅ Hardcoded security check
+const ADMIN_PHONE_NUMBERS = ['09127467261', '09019244403']; // ✅ Hardcoded security check
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -93,7 +93,7 @@ const AdminLogin = () => {
       
       if (res.ok) {
         // ✅ FRONTEND SECURITY CHECK
-        if (data.user?.is_admin && data.user?.phone_number === ADMIN_PHONE_NUMBER) {
+        if (data.user?.is_admin && ADMIN_PHONE_NUMBERS.includes(data.user?.phone_number)) {
           localStorage.setItem('token', data.access_token);
           navigate('/admin');
         } else {
