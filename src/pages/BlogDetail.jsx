@@ -11,7 +11,6 @@ const sanitizeHtml = (raw) => {
     .replace(/\sstyle="[^"]*"/gi, '')
     .replace(/<span[^>]*>/gi, '')
     .replace(/<\/span>/gi, '')
-    .replace(/<img[^>]*src="data:image[^"]*"[^>]*>/gi, '')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&');
