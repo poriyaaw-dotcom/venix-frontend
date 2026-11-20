@@ -1,11 +1,20 @@
-// src/pages/Blog.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async'; // ✅ Added Helmet import
+import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-const API_BASE_URL = 'https://api.venixpodshop.ir/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.venixpodshop.ir/api/v1';
+
+// ✅ Helper function to strip HTML tags for clean preview text
+const stripHtml = (raw) => {
+  if (!raw) return '';
+  return raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
 
 const Blog = () => {
   const navigate = useNavigate();
@@ -27,11 +36,10 @@ const Blog = () => {
       }
     };
     fetchBlogs();
-  }, []);
+  }, [API_BASE_URL]);
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
-      {/* ✅ SEO Meta Tags for Main Blog Page */}
       <Helmet>
         <title>مجله ونیکس | مقالات آموزشی ویپ و پاد سیستم</title>
         <meta name="description" content="مطالعه جدیدترین مقالات آموزشی، بررسی تخصصی و اخبار دنیای ویپ، پاد سیستم و جویس در مجله تخصصی فروشگاه ونیکس." />
@@ -53,11 +61,15 @@ const Blog = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
             {blogs.map((blog) => (
-              <div key={blog.id} onClick={() => navigate(`/blog/${blog.id}`)} className="bg-white/[0.035] border border-white/10 rounded-2xl overflow-hidden hover:border-primary/50 transition duration-300 flex flex-col cursor-pointer group">
+              <div 
+                key={blog.id} 
+                onClick={() => navigate(`/blog/${blog.id}`)} 
+                className="bg-white/[0.035] border border-white/10 rounded-2xl overflow-hidden hover:border-primary/50 transition duration-300 flex flex-col cursor-pointer group"
+              >
                 <div className="h-40 md:h-48 bg-gray-800 relative overflow-hidden">
                   {blog.image_url ? (
                     <img 
-                      src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.ir${blog.image_url}`} 
+                      src={blog.image_url.startsWith('http') ? blog.image_url : `${API_BASE_URL.replace('/api/v1', '')}${blog.image_url}`} 
                       alt={blog.title} 
                       className="w-full h-full object-cover hover:scale-105 transition duration-500" 
                     />
@@ -66,8 +78,13 @@ const Blog = () => {
                   )}
                 </div>
                 <div className="p-4 md:p-6 flex flex-col flex-grow">
-                  <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3 line-clamp-2 group-hover:text-primary transition-colors">{blog.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-4 flex-grow">{blog.content}</p>
+                  <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                    {blog.title}
+                  </h3>
+                  {/* ✅ Use stripHtml to show clean text preview */}
+                  <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-4 flex-grow">
+                    {stripHtml(blog.content)}
+                  </p>
                   <div className="mt-auto pt-4 border-t border-white/10">
                     <span className="text-xs text-gray-500">
                       {new Date(blog.created_at).toLocaleDateString('fa-IR')}

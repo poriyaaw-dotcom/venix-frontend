@@ -1,8 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async'; 
+import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
+// ✅ Sanitizes blog HTML: removes dark-mode highlight styles, fixes broken links
+const sanitizeBlogHtml = (raw) => {
+  if (!raw) return '';
+  let html = raw;
+  // 1. Remove ALL inline style attributes (kills the "highlighted text" boxes)
+  html = html.replace(/\sstyle="[^"]*"/gi, '');
+  html = html.replace(/\sstyle='[^']*'/gi, '');
+  // 2. Fix links that point to chat.qwen.ai → make them internal relative links
+  html = html.replace(/https:\/\/chat\.qwen\.ai\//gi, '/');
+  // 3. Remove target=_blank so internal links navigate inside the SPA
+  html = html.replace(/\starget="_blank"/gi, '');
+  return html;
+};
+
+// ✅ Plain-text version (for meta description & previews)
+const htmlToPlainText = (raw) =>
+  sanitizeBlogHtml(raw)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -35,14 +57,15 @@ const BlogDetail = () => {
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-white">در حال بارگذاری...</div>;
   if (!blog) return null;
 
-  const imageUrl = blog.image_url 
+  const imageUrl = blog.image_url
     ? (blog.image_url.startsWith('http') ? blog.image_url : `${API_URL.replace('/api/v1', '')}${blog.image_url}`)
     : null;
 
-  // ✅ Smart SEO Fallbacks (strips HTML tags for clean meta description)
-  const plainTextContent = blog.content ? blog.content.replace(/<[^>]*>/g, '') : '';
+  const cleanContent = sanitizeBlogHtml(blog.content);
+  const plainText = htmlToPlainText(blog.content);
+
   const seoTitle = blog.meta_title || `${blog.title} | مجله آموزشی ونیکس`;
-  const seoDescription = blog.meta_description || (plainTextContent.substring(0, 160) + '...');
+  const seoDescription = blog.meta_description || (plainText.substring(0, 160) + '...');
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
@@ -62,22 +85,22 @@ const BlogDetail = () => {
         <button onClick={() => navigate('/blog')} className="mb-4 md:mb-6 text-primary hover:underline flex items-center gap-2 text-sm font-bold">
           ← بازگشت به لیست بلاگ‌ها
         </button>
-        
+
         <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4 leading-tight">{blog.title}</h1>
         <div className="text-sm text-gray-400 mb-8 border-b border-white/10 pb-4">
           {new Date(blog.created_at).toLocaleDateString('fa-IR')}
         </div>
-        
+
         {imageUrl && (
           <div className="w-full h-[200px] md:h-[300px] lg:h-[400px] rounded-2xl overflow-hidden mb-6 md:mb-8 bg-gray-800 shadow-2xl">
             <img src={imageUrl} alt={blog.image_alt_text || blog.title} className="w-full h-full object-cover" />
           </div>
         )}
-        
-        {/* ✅ FIX: Use dangerouslySetInnerHTML to render HTML content properly */}
-        <div 
-          className="text-gray-300 leading-relaxed md:leading-loose text-sm md:text-base lg:text-lg [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pr-6 [&>ul]:mb-4 [&>li]:mb-2 [&>a]:text-primary [&>a]:underline"
-          dangerouslySetInnerHTML={{ __html: blog.content }}
+
+        {/* ✅ Render sanitized HTML */}
+        <div
+          className="blog-content text-gray-300 leading-relaxed md:leading-loose text-sm md:text-base lg:text-lg"
+          dangerouslySetInnerHTML={{ __html: cleanContent }}
         />
       </main>
       <Footer />
