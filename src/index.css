@@ -6,33 +6,21 @@
 
 html, body { 
   @apply bg-background font-sans overflow-x-hidden;
-  color: #e5e5e5; /* Light gray text - matches your original design */
+  color: #e5e5e5;
 }
 
 /* ✅ YOUR ORIGINAL ANIMATIONS */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
-}
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
 
 @keyframes slideInRight {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
-
-.animate-slideInRight {
-  animation: slideInRight 0.3s ease-out;
-}
+.animate-slideInRight { animation: slideInRight 0.3s ease-out; }
 
 /* ✅ React Quill Dark Theme Customization */
 .ql-toolbar.ql-snow {
@@ -41,14 +29,12 @@ html, body {
   border-radius: 12px 12px 0 0 !important;
   background: rgba(255, 255, 255, 0.05) !important;
 }
-
 .ql-container.ql-snow {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 0 0 12px 12px !important;
   background: rgba(0, 0, 0, 0.2) !important;
   font-family: inherit !important;
 }
-
 .ql-editor {
   min-height: 200px !important;
   color: #e5e5e5 !important;
@@ -56,26 +42,15 @@ html, body {
   line-height: 1.6 !important;
   text-align: right !important;
 }
-
 .ql-editor.ql-blank::before {
   color: rgba(255, 255, 255, 0.4) !important;
   font-style: normal !important;
   right: 15px !important;
   left: auto !important;
 }
-
-.ql-snow .ql-stroke {
-  stroke: #e5e5e5 !important;
-}
-
-.ql-snow .ql-fill {
-  fill: #e5e5e5 !important;
-}
-
-.ql-snow .ql-picker {
-  color: #e5e5e5 !important;
-}
-
+.ql-snow .ql-stroke { stroke: #e5e5e5 !important; }
+.ql-snow .ql-fill { fill: #e5e5e5 !important; }
+.ql-snow .ql-picker { color: #e5e5e5 !important; }
 .ql-snow .ql-picker-options {
   background: rgba(26, 26, 26, 0.95) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -86,12 +61,71 @@ html, body {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-float:hover { animation: none; }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+/* =============================================
+   ✅ NEW: Blog Content Rendering (Cleaned & Combined)
+   ============================================= */
+
+/* Bulletproof fallback: force transparent backgrounds on any stray spans/elements 
+   to override the dark-mode inline styles from the editor */
+.blog-content span,
+.blog-content strong,
+.blog-content p,
+.blog-content li {
+  background-color: transparent !important;
+  color: inherit !important;
 }
 
-/* Pause animation on hover so it's easy to click */
-.animate-float:hover {
-  animation: none;
+.blog-content {
+  direction: rtl;
+  text-align: right;
+}
+
+.blog-content h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 2rem 0 1rem;
+  line-height: 1.8;
+}
+
+.blog-content h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e5b567; /* Your primary gold color */
+  margin: 1.5rem 0 0.5rem;
+}
+
+.blog-content p { 
+  margin-bottom: 1rem; 
+  line-height: 2; 
+}
+
+.blog-content ul {
+  list-style: disc;
+  padding-right: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.blog-content li { 
+  margin-bottom: 0.4rem; 
+}
+
+.blog-content a {
+  color: #e5b567;
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.blog-content a:hover { 
+  color: #f0cd8a; 
+}
+
+.blog-content img {
+  border-radius: 1rem;
+  margin: 1.5rem 0;
+  max-width: 100%;
+  height: auto;
 }
