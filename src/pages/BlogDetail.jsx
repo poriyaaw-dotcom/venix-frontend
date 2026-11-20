@@ -1,4 +1,3 @@
-// src/pages/BlogDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async'; 
@@ -40,9 +39,10 @@ const BlogDetail = () => {
     ? (blog.image_url.startsWith('http') ? blog.image_url : `${API_URL.replace('/api/v1', '')}${blog.image_url}`)
     : null;
 
-  // ✅ Smart SEO Fallbacks
+  // ✅ Smart SEO Fallbacks (strips HTML tags for clean meta description)
+  const plainTextContent = blog.content ? blog.content.replace(/<[^>]*>/g, '') : '';
   const seoTitle = blog.meta_title || `${blog.title} | مجله آموزشی ونیکس`;
-  const seoDescription = blog.meta_description || (blog.content ? blog.content.substring(0, 160) : 'مطالعه مقاله تخصصی در مجله آموزشی فروشگاه ونیکس');
+  const seoDescription = blog.meta_description || (plainTextContent.substring(0, 160) + '...');
 
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200 flex flex-col">
@@ -74,9 +74,11 @@ const BlogDetail = () => {
           </div>
         )}
         
-        <div className="text-gray-300 leading-relaxed md:leading-loose text-sm md:text-base lg:text-lg whitespace-pre-wrap">
-          {blog.content}
-        </div>
+        {/* ✅ FIX: Use dangerouslySetInnerHTML to render HTML content properly */}
+        <div 
+          className="text-gray-300 leading-relaxed md:leading-loose text-sm md:text-base lg:text-lg [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pr-6 [&>ul]:mb-4 [&>li]:mb-2 [&>a]:text-primary [&>a]:underline"
+          dangerouslySetInnerHTML={{ __html: blog.content }}
+        />
       </main>
       <Footer />
     </div>
