@@ -96,7 +96,7 @@ const Footer = () => {
           <p>تمامی حقوق محفوظ و متعلق به VENIX می‌باشد.</p>
           <p>
             توسعه و طراحی توسط تیم 
-            <a href="#" className="text-primary hover:underline font-bold mx-1">آریس</a>
+            <a href="https://aresgroup.ir" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold mx-1">آریس</a>
           </p>
         </div>
       </div>

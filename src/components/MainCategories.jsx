@@ -43,7 +43,7 @@ const MainCategories = () => {
                 <img 
                   src={cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `https://api.venixpodshop.ir${cat.image_url}`) : '/category-img.png'} 
                   alt={cat.name} 
-                  className="w-12 h-12 md:w-24 md:h-24 object-contain mb-1.5 md:mb-2 group-hover:scale-110 transition-transform duration-300 z-10"
+                  className="w-16 h-16 md:w-28 md:h-28 object-cover rounded-xl mb-2 group-hover:scale-110 transition-transform duration-300 z-10"
                   onError={(e) => { e.target.onerror = null; e.target.src='/category-img.png'; }} 
                 />
                 <h3 className="font-bold text-xs md:text-sm text-primary z-10 text-center leading-tight">{cat.name}</h3>

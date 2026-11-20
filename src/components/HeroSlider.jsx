@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 
 const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  
-  // Point directly to the backend where the uploads folder actually lives
-  const BACKEND_URL = "https://api.venixpodshop.ir"; 
+  const BACKEND_URL = "https://api.venixpodshop.ir";
 
   const posters = [
-    { id: 1, image: `${BACKEND_URL}/uploads/cover1.jpg`, alt: 'Hero Cover 1' },
-    { id: 2, image: `${BACKEND_URL}/uploads/cover2.jpg`, alt: 'Hero Cover 2' },
+    { id: 1, image: `${BACKEND_URL}/uploads/cover1.jpg`, alt: 'دستگاه‌های ویپ، پاد سیستم و پاد ماد ونیکس' },
+    { id: 2, image: `${BACKEND_URL}/uploads/cover2.jpg`, alt: 'جویس و سالت نیکوتین اصل ونیکس' },
+    { id: 3, image: `${BACKEND_URL}/uploads/cover3.jpg`, alt: 'کویل و کارتریج یدکی ونیکس' },
   ];
 
   useEffect(() => {
@@ -32,7 +31,6 @@ const HeroSlider = () => {
           </div>
         ))}
         
-        {/* Navigation Dots */}
         <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 md:gap-3 z-10">
           {posters.map((_, idx) => (
             <button 
