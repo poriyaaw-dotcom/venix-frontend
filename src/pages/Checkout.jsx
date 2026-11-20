@@ -92,14 +92,17 @@ const Checkout = () => {
 
     setLoading(true);
     try {
+      // ✅ FIXED PAYLOAD: Parse integers and remove 'phone' to match backend schema exactly
       const checkoutPayload = {
-        items: cartItems.map(item => ({ variant_id: item.variant_id, quantity: item.quantity })),
+        items: cartItems.map(item => ({ 
+          variant_id: parseInt(item.variant_id || item.id, 10), 
+          quantity: parseInt(item.quantity, 10) 
+        })),
         shipping_address: {
           province: formData.province,
           city: formData.city,
           full_address: formData.full_address,
-          postal_code: formData.postal_code,
-          phone: formData.phone
+          postal_code: formData.postal_code
         },
         payment_method: formData.payment_method
       };
