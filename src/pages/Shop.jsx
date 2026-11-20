@@ -1,3 +1,4 @@
+// src/pages/Shop.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -29,6 +30,10 @@ const Shop = () => {
   const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 12;
 
+  // ✅ ADDED: State for category details (to show SEO description)
+  const [categoryDetails, setCategoryDetails] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'https://api.venixpodshop.ir/api/v1';
+
   useEffect(() => {
     setFilters(prev => ({
       ...prev,
@@ -37,6 +42,27 @@ const Shop = () => {
     }));
     setCurrentPage(1);
   }, [urlCategory, urlBrand]);
+
+  // ✅ ADDED: Fetch category details when urlCategory changes
+  useEffect(() => {
+    if (urlCategory) {
+      const fetchCategory = async () => {
+        try {
+          const res = await fetch(`${API_URL}/categories`);
+          if (res.ok) {
+            const cats = await res.json();
+            const found = cats.find(c => c.slug === urlCategory || c.name === urlCategory);
+            setCategoryDetails(found || null);
+          }
+        } catch (err) {
+          console.error("Failed to fetch category details", err);
+        }
+      };
+      fetchCategory();
+    } else {
+      setCategoryDetails(null);
+    }
+  }, [urlCategory, API_URL]);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -91,12 +117,12 @@ const Shop = () => {
   return (
     <div className="min-h-screen bg-background font-sans text-gray-200">
       <Helmet>
-        <title>خرید ویپ، پاد سیستم و جویس | فروشگاه ونیکس</title>
-        <meta name="description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت و ضمانت اصالت کالا در فروشگاه ونیکس." />
-        <link rel="canonical" href="https://venixpodshop.ir/shop" />
-        <meta property="og:title" content="خرید ویپ، پاد سیستم و جویس | فروشگاه ونیکس" />
-        <meta property="og:description" content="خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت." />
-        <meta property="og:url" content="https://venixpodshop.ir/shop" />
+        <title>{categoryDetails?.meta_title || 'خرید ویپ، پاد سیستم و جویس | فروشگاه ونیکس'}</title>
+        <meta name="description" content={categoryDetails?.meta_description || 'خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت و ضمانت اصالت کالا در فروشگاه ونیکس.'} />
+        <link rel="canonical" href={`https://venixpodshop.ir${urlCategory ? `/shop?category=${urlCategory}` : '/shop'}`} />
+        <meta property="og:title" content={categoryDetails?.meta_title || 'خرید ویپ، پاد سیستم و جویس | فروشگاه ونیکس'} />
+        <meta property="og:description" content={categoryDetails?.meta_description || 'خرید آنلاین انواع ویپ، پاد سیستم، جویس و لوازم جانبی با بهترین قیمت.'} />
+        <meta property="og:url" content={`https://venixpodshop.ir${urlCategory ? `/shop?category=${urlCategory}` : '/shop'}`} />
         <meta property="og:type" content="website" />
       </Helmet>
 
@@ -105,7 +131,7 @@ const Shop = () => {
       <section id="shop-section" className="my-[35px] scroll-mt-24">
         <div className="max-w-[1197px] mx-auto px-4">
           <div className="flex items-start justify-between mb-4 md:mb-6 relative z-10">
-            <h1 className="text-[25px] font-bold text-white">فروشگاه محصولات</h1>
+            <h1 className="text-[25px] font-bold text-white">{categoryDetails?.name || 'فروشگاه محصولات'}</h1>
             <div className="flex flex-col items-end gap-2">
               <div className="relative z-20">
                 <SortDropdown value={sort} onChange={setSort} />
@@ -164,6 +190,22 @@ const Shop = () => {
           </div>
         </div>
       </section>
+
+      {/* ✅ ADDED: Category SEO Description Rendering (Safe, no dangerouslySetInnerHTML) */}
+      {categoryDetails?.description && (
+        <section className="max-w-[1197px] mx-auto px-4 py-12 border-t border-white/10 mt-12">
+          <div className="text-gray-300 leading-8 text-sm md:text-base space-y-4">
+            {categoryDetails.description.split('\n').map((line, i) => {
+              if (line.startsWith('## ')) return <h2 key={i} className="text-xl md:text-2xl font-bold text-white mt-8 mb-4">{line.replace('## ', '')}</h2>;
+              if (line.startsWith('### ')) return <h3 key={i} className="text-lg md:text-xl font-bold text-primary mt-6 mb-3">{line.replace('### ', '')}</h3>;
+              if (line.trim() === '') return <div key={i} className="h-2" />;
+              if (line.startsWith('- ')) return <div key={i} className="flex gap-2 mr-4"><span className="text-primary">•</span><span>{line.replace('- ', '')}</span></div>;
+              return <p key={i}>{line}</p>;
+            })}
+          </div>
+        </section>
+      )}
+
       {isMobileFilterOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden flex justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileFilterOpen(false)}></div>

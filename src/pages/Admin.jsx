@@ -62,11 +62,11 @@ const Admin = () => {
   const [newCatMetaTitle, setNewCatMetaTitle] = useState('');
   const [newCatMetaDesc, setNewCatMetaDesc] = useState('');
   const [newCatAltText, setNewCatAltText] = useState('');
+  const [newCatDesc, setNewCatDesc] = useState(''); // ✅ ADDED
 
   const filteredBrandsForProduct = productForm.category_id ? brands.filter(b => b.category_id == productForm.category_id) : [];
   const filteredBrandsForTab = selectedBrandCategory ? brands.filter(b => b.category_id == selectedBrandCategory) : brands;
 
-  // ✅ React Quill Configuration
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -291,8 +291,23 @@ const Admin = () => {
     e.preventDefault(); if (!newCatName.trim()) return;
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/categories`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newCatName, slug: newCatSlug || undefined, meta_title: newCatMetaTitle || null, meta_description: newCatMetaDesc || null, image_alt_text: newCatAltText || null }) });
-      if (res.ok) { setNewCatName(''); setNewCatSlug(''); setNewCatMetaTitle(''); setNewCatMetaDesc(''); setNewCatAltText(''); const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }); if (resCats.ok) setCategories(await resCats.json()); }
+      const res = await fetch(`${API_BASE_URL}/admin/categories`, { 
+        method: 'POST', 
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          name: newCatName, 
+          slug: newCatSlug || undefined, 
+          meta_title: newCatMetaTitle || null, 
+          meta_description: newCatMetaDesc || null, 
+          image_alt_text: newCatAltText || null,
+          description: newCatDesc || null // ✅ ADDED
+        }) 
+      });
+      if (res.ok) { 
+        setNewCatName(''); setNewCatSlug(''); setNewCatMetaTitle(''); setNewCatMetaDesc(''); setNewCatAltText(''); setNewCatDesc(''); 
+        const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }); 
+        if (resCats.ok) setCategories(await resCats.json()); 
+      }
     } catch (error) { toast.error('خطا در افزودن دسته‌بندی'); }
   };
 
@@ -572,6 +587,15 @@ const Admin = () => {
                   <input type="text" placeholder="توضیحات سئو (Meta Description)" value={newCatMetaDesc} onChange={(e) => setNewCatMetaDesc(e.target.value)} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" maxLength="160" />
                 </div>
                 <input type="text" placeholder="متن جایگزین تصویر (Image Alt Text)" value={newCatAltText} onChange={(e) => setNewCatAltText(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
+                
+                {/* ✅ ADDED: Description Textarea */}
+                <textarea 
+                  placeholder="توضیحات کامل دسته‌بندی (برای نمایش در پایین صفحه و سئو - می‌توانید از ## برای تیتر استفاده کنید)" 
+                  value={newCatDesc} 
+                  onChange={(e) => setNewCatDesc(e.target.value)} 
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" 
+                />
+                
                 <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن دسته‌بندی</button>
               </form>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
