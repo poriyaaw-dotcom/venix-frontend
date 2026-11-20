@@ -57,12 +57,14 @@ const Admin = () => {
     specifications: ['']
   });
 
+  // ✅ Category States
   const [newCatName, setNewCatName] = useState('');
   const [newCatSlug, setNewCatSlug] = useState('');
   const [newCatMetaTitle, setNewCatMetaTitle] = useState('');
   const [newCatMetaDesc, setNewCatMetaDesc] = useState('');
   const [newCatAltText, setNewCatAltText] = useState('');
-  const [newCatDesc, setNewCatDesc] = useState(''); // ✅ ADDED
+  const [newCatDesc, setNewCatDesc] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null); // ✅ ADDED
 
   const filteredBrandsForProduct = productForm.category_id ? brands.filter(b => b.category_id == productForm.category_id) : [];
   const filteredBrandsForTab = selectedBrandCategory ? brands.filter(b => b.category_id == selectedBrandCategory) : brands;
@@ -287,34 +289,75 @@ const Admin = () => {
     } catch (error) { console.error("Failed to load product details", error); toast.error('خطای شبکه در دریافت اطلاعات محصول'); }
   };
 
-  const handleAddCategory = async (e) => {
-    e.preventDefault(); if (!newCatName.trim()) return;
+  // ✅ UPDATED: Handle both Create and Update for Categories
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
     const token = localStorage.getItem('token');
+    const payload = {
+      name: newCatName,
+      slug: newCatSlug || undefined,
+      meta_title: newCatMetaTitle || null,
+      meta_description: newCatMetaDesc || null,
+      image_alt_text: newCatAltText || null,
+      description: newCatDesc || null
+    };
+
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/categories`, { 
-        method: 'POST', 
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-          name: newCatName, 
-          slug: newCatSlug || undefined, 
-          meta_title: newCatMetaTitle || null, 
-          meta_description: newCatMetaDesc || null, 
-          image_alt_text: newCatAltText || null,
-          description: newCatDesc || null // ✅ ADDED
-        }) 
-      });
-      if (res.ok) { 
-        setNewCatName(''); setNewCatSlug(''); setNewCatMetaTitle(''); setNewCatMetaDesc(''); setNewCatAltText(''); setNewCatDesc(''); 
-        const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } }); 
-        if (resCats.ok) setCategories(await resCats.json()); 
+      let res;
+      if (editingCategory) {
+        res = await fetch(`${API_BASE_URL}/admin/categories/${editingCategory.id}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch(`${API_BASE_URL}/admin/categories`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
       }
-    } catch (error) { toast.error('خطا در افزودن دسته‌بندی'); }
+
+      if (res.ok) {
+        toast.success(editingCategory ? 'دسته‌بندی با موفقیت بروزرسانی شد' : 'دسته‌بندی با موفقیت افزوده شد');
+        setNewCatName(''); setNewCatSlug(''); setNewCatMetaTitle(''); setNewCatMetaDesc(''); setNewCatAltText(''); setNewCatDesc('');
+        setEditingCategory(null);
+        const resCats = await fetch(`${API_BASE_URL}/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (resCats.ok) setCategories(await resCats.json());
+      } else {
+        toast.error('خطا در ذخیره دسته‌بندی');
+      }
+    } catch (error) { toast.error('خطای شبکه'); }
+  };
+
+  const handleEditCategoryClick = (cat) => {
+    setEditingCategory(cat);
+    setNewCatName(cat.name);
+    setNewCatSlug(cat.slug || '');
+    setNewCatMetaTitle(cat.meta_title || '');
+    setNewCatMetaDesc(cat.meta_description || '');
+    setNewCatAltText(cat.image_alt_text || '');
+    setNewCatDesc(cat.description || '');
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategory(null);
+    setNewCatName(''); setNewCatSlug(''); setNewCatMetaTitle(''); setNewCatMetaDesc(''); setNewCatAltText(''); setNewCatDesc('');
   };
 
   const handleDeleteCategory = async (catId) => {
     if (!window.confirm('آیا از حذف این دسته‌بندی اطمینان دارید؟')) return;
     const token = localStorage.getItem('token');
-    try { const res = await fetch(`${API_BASE_URL}/admin/categories/${catId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setCategories(categories.filter(c => c.id !== catId)); else toast.error('خطا در حذف دسته‌بندی'); } catch (error) { toast.error('خطای شبکه'); }
+    try { 
+      const res = await fetch(`${API_BASE_URL}/admin/categories/${catId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); 
+      if (res.ok) {
+        setCategories(categories.filter(c => c.id !== catId));
+        toast.success('دسته‌بندی حذف شد');
+      } else {
+        toast.error('خطا در حذف دسته‌بندی'); 
+      }
+    } catch (error) { toast.error('خطای شبکه'); }
   };
 
   const handleAddBrand = async (e) => {
@@ -576,8 +619,8 @@ const Admin = () => {
           {activeTab === 'categories' && (
             <div>
               <h1 className="text-2xl font-bold text-white mb-6">مدیریت دسته‌بندی‌ها</h1>
-              <form onSubmit={handleAddCategory} className="bg-white/[0.025] border border-white/10 rounded-xl p-6 mb-8 space-y-4">
-                <h3 className="text-lg font-bold text-primary mb-2">افزودن دسته‌بندی جدید</h3>
+              <form onSubmit={handleSaveCategory} className="bg-white/[0.025] border border-white/10 rounded-xl p-6 mb-8 space-y-4">
+                <h3 className="text-lg font-bold text-primary mb-2">{editingCategory ? 'ویرایش دسته‌بندی' : 'افزودن دسته‌بندی جدید'}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input type="text" placeholder="نام دسته‌بندی جدید" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" required />
                   <input type="text" placeholder="اسلاگ (اختیاری - مثلا: vape)" value={newCatSlug} onChange={(e) => setNewCatSlug(e.target.value)} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" dir="ltr" />
@@ -587,24 +630,33 @@ const Admin = () => {
                   <input type="text" placeholder="توضیحات سئو (Meta Description)" value={newCatMetaDesc} onChange={(e) => setNewCatMetaDesc(e.target.value)} className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" maxLength="160" />
                 </div>
                 <input type="text" placeholder="متن جایگزین تصویر (Image Alt Text)" value={newCatAltText} onChange={(e) => setNewCatAltText(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary" />
-                
-                {/* ✅ ADDED: Description Textarea */}
                 <textarea 
                   placeholder="توضیحات کامل دسته‌بندی (برای نمایش در پایین صفحه و سئو - می‌توانید از ## برای تیتر استفاده کنید)" 
                   value={newCatDesc} 
                   onChange={(e) => setNewCatDesc(e.target.value)} 
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary h-32" 
                 />
-                
-                <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">افزودن دسته‌بندی</button>
+                <div className="flex gap-3">
+                  <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold transition">
+                    {editingCategory ? 'ذخیره تغییرات' : 'افزودن دسته‌بندی'}
+                  </button>
+                  {editingCategory && (
+                    <button type="button" onClick={handleCancelEditCategory} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl font-bold transition">
+                      انصراف
+                    </button>
+                  )}
+                </div>
               </form>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {categories.map(cat => (
                   <div key={cat.id} className="bg-white/[0.025] border border-white/10 rounded-xl p-4 flex flex-col items-center gap-3 relative group">
-                    <h3 className="font-bold text-white">{cat.name}</h3>
-                    <p className="text-xs text-gray-500" dir="ltr">{cat.slug}</p>
+                    <h3 className="font-bold text-white text-center">{cat.name}</h3>
+                    <p className="text-xs text-gray-500 text-center" dir="ltr">{cat.slug}</p>
                     {cat.meta_title && <p className="text-[10px] text-primary text-center line-clamp-2">{cat.meta_title}</p>}
-                    <button onClick={() => handleDeleteCategory(cat.id)} className="absolute top-2 left-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition opacity-0 group-hover:opacity-100" title="حذف"><FiTrash2 /></button>
+                    <div className="flex gap-2 absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition">
+                      <button onClick={() => handleEditCategoryClick(cat)} className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition" title="ویرایش"><FiEdit2 /></button>
+                      <button onClick={() => handleDeleteCategory(cat.id)} className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition" title="حذف"><FiTrash2 /></button>
+                    </div>
                   </div>
                 ))}
               </div>
