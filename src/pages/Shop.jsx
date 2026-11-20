@@ -1,4 +1,3 @@
-// src/pages/Shop.jsx
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -30,7 +29,6 @@ const Shop = () => {
   const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 12;
 
-  // ✅ ADDED: State for category details (to show SEO description)
   const [categoryDetails, setCategoryDetails] = useState(null);
   const API_URL = import.meta.env.VITE_API_URL || 'https://api.venixpodshop.ir/api/v1';
 
@@ -43,12 +41,12 @@ const Shop = () => {
     setCurrentPage(1);
   }, [urlCategory, urlBrand]);
 
-  // ✅ ADDED: Fetch category details when urlCategory changes
+  // ✅ FIXED: Fetches from /products/categories
   useEffect(() => {
     if (urlCategory) {
       const fetchCategory = async () => {
         try {
-          const res = await fetch(`${API_URL}/categories`);
+          const res = await fetch(`${API_URL}/products/categories`);
           if (res.ok) {
             const cats = await res.json();
             const found = cats.find(c => c.slug === urlCategory || c.name === urlCategory);
@@ -191,7 +189,7 @@ const Shop = () => {
         </div>
       </section>
 
-      {/* ✅ ADDED: Category SEO Description Rendering (Safe, no dangerouslySetInnerHTML) */}
+      {/* ✅ SEO Description Rendering */}
       {categoryDetails?.description && (
         <section className="max-w-[1197px] mx-auto px-4 py-12 border-t border-white/10 mt-12">
           <div className="text-gray-300 leading-8 text-sm md:text-base space-y-4">
