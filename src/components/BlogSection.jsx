@@ -2,6 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const stripHtml = (raw) => {
+  if (!raw) return '';
+  return raw
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&[^;]+;/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+
 const BlogSection = () => {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -71,7 +81,7 @@ const BlogSection = () => {
                 <div className="p-2 flex flex-col justify-between text-white">
                   <div>
                     <h3 className="text-xs font-bold mb-0.5 text-primary line-clamp-1">{blog.title}</h3>
-                    <p className="text-[9px] text-gray-400 line-clamp-2">{blog.content}</p>
+                    <p className="text-[9px] text-gray-400 line-clamp-2">{stripHtml(blog.content)}</p>
                   </div>
                 </div>
               </div>
@@ -133,7 +143,7 @@ const BlogSection = () => {
                 <div className="h-2/5 bg-[#2a2a2a] p-4 flex flex-col justify-between text-white">
                   <div>
                     <h3 className="text-lg font-bold mb-1 text-primary line-clamp-1">{blog.title}</h3>
-                    <p className="text-[10px] text-gray-400 line-clamp-3">{blog.content}</p>
+                    <p className="text-[10px] text-gray-400 line-clamp-3">{stripHtml(blog.content)}</p>
                   </div>
                 </div>
               </div>

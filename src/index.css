@@ -129,3 +129,26 @@ html, body {
   max-width: 100%;
   height: auto;
 }
+/* ✅ Blog content cleanup - force transparent backgrounds */
+.blog-content,
+.blog-content * {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.blog-content p {
+  margin-bottom: 1rem;
+  line-height: 1.8;
+}
+
+.blog-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.blog-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}

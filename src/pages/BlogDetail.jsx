@@ -5,6 +5,19 @@ import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+const sanitizeHtml = (raw) => {
+  if (!raw) return '';
+  return raw
+    .replace(/\sstyle="[^"]*"/gi, '')
+    .replace(/<span[^>]*>/gi, '')
+    .replace(/<\/span>/gi, '')
+    .replace(/<img[^>]*src="data:image[^"]*"[^>]*>/gi, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+};
+
+
 // ✅ Sanitizes blog HTML: removes dark-mode highlight styles, fixes broken links
 const sanitizeBlogHtml = (raw) => {
   if (!raw) return '';

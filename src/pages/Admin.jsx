@@ -84,7 +84,7 @@ const Admin = () => {
 
   const quillFormats = [
     'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'link', 'image', 'blockquote', 'code-block', 'color', 'background', 'align'
+    'list', 'bullet', 'link', 'image', 'blockquote', 'code-block', 'align'
   ];
 
   useEffect(() => {
