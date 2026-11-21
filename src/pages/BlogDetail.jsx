@@ -22,8 +22,6 @@ const sanitizeBlogHtml = (raw) => {
   if (!raw) return '';
   let html = raw;
   // 1. Remove ALL inline style attributes (kills the "highlighted text" boxes)
-  html = html.replace(/\sstyle="[^"]*"/gi, '');
-  html = html.replace(/\sstyle='[^']*'/gi, '');
   // 2. Fix links that point to chat.qwen.ai → make them internal relative links
   html = html.replace(/https:\/\/chat\.qwen\.ai\//gi, '/');
   // 3. Remove target=_blank so internal links navigate inside the SPA
