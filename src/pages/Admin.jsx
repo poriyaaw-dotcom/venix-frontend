@@ -887,7 +887,7 @@ const Admin = () => {
                       {blog.image_url && <img src={blog.image_url.startsWith('http') ? blog.image_url : `https://api.venixpodshop.ir${blog.image_url}`} alt={blog.title} className="w-16 h-16 rounded-lg object-cover" />}
                       <div>
                         <h3 className={`font-bold ${blog.is_active ? 'text-white' : 'text-gray-500 line-through'}`}>{blog.title}</h3>
-                        <p className="text-xs text-gray-400 line-clamp-1" dangerouslySetInnerHTML={{ __html: blog.content.substring(0, 100) + '...' }} />
+                        <p className="text-xs text-gray-400 line-clamp-1" {blog.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 100) + '...'} />
                       </div>
                     </div>
                     <div className="flex items-center gap-3 no-print">
